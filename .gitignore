@@ -12,3 +12,5 @@ wheels/
 .env
 graph.json
 outputs/
+uv.lock
+.python-version
