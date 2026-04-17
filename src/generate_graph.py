@@ -3,7 +3,7 @@ import asyncio
 import os
 import re
 import logging
-from typing import List, Dict, Any, Set, Tuple, Optional
+from typing import List, Dict, Any, Set, Tuple, Optional, Union
 from collections import defaultdict
 from src.content_extractor.s3_sequential import S3QuoteExtractor
 from src.content_extractor.base import BaseExtractorConfig
@@ -123,14 +123,16 @@ def build_node_structure(entities: List[Dict[str, Any]], entity_results: Dict[st
 
     return {"nodes": nodes, "edges": edges}
 
-async def generate_graph(input_path: str, output_path: Optional[str] = None):
-    """Main orchestration function."""
-    if not os.path.exists(input_path):
-        logger.error(f"Input file {input_path} not found.")
-        return
-
-    with open(input_path, "r") as f:
-        graph_data = json.load(f)
+async def generate_graph(input_data: Union[str, Dict[str, Any]], output_path: Optional[str] = None):
+    """Main orchestration function. Can take a file path (str) or a dictionary."""
+    if isinstance(input_data, str):
+        if not os.path.exists(input_data):
+            logger.error(f"Input file {input_data} not found.")
+            return
+        with open(input_data, "r") as f:
+            graph_data = json.load(f)
+    else:
+        graph_data = input_data
     
     entities = graph_data.get("entities", [])
     registry = build_registries(entities)
