@@ -1,6 +1,6 @@
 import os
 import logging
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from dotenv import load_dotenv
 from src.generate_graph import generate_graph
 
@@ -18,6 +18,11 @@ logger = logging.getLogger(__name__)
 
 def create_app():
     app = Flask(__name__)
+
+    @app.route('/graph', methods=['GET'])
+    def graph_page():
+        """Serve the Cytoscape graph viewer page."""
+        return render_template('graph.html')
 
     @app.route('/healthcheck/ready', methods=['GET'])
     def health_check():

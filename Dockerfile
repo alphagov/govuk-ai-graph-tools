@@ -1,5 +1,5 @@
 # Use a slim Python image
-FROM python:3.12-slim
+FROM python:3.13-slim
 
 
 RUN pip install uv
@@ -14,11 +14,10 @@ COPY pyproject.toml uv.lock ./
 
 RUN uv sync --no-dev --no-install-project
 
-
 COPY src/ ./src/
+COPY static/ ./static/
+COPY templates/ ./templates/
 COPY app.py ./app.py
-
-
 
 # Set environment variables
 ENV PATH="/app/.venv/bin:$PATH"

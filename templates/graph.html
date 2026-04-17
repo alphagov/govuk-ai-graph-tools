@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Graph Viewer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/graph.css') }}" />
+  </head>
+  <body>
+    <header>
+      <h1>Graph Viewer</h1>
+      <p class="status">Loading graph from the /extract endpoint...</p>
+    </header>
+    <main>
+      <div id="graph"></div>
+      <aside class="sidebar">
+        <h2></h2>
+        <pre id="node-details">No node selected.</pre>
+      </aside>
+    </main>
+
+    <script src="https://unpkg.com/cytoscape@3.4.0/dist/cytoscape.min.js"></script>
+    <script>
+      const status = document.querySelector('.status');
+      const details = document.getElementById('node-details');
+
+      function formatNodeData(node) {
+        const data = node.data();
+        return JSON.stringify(data, null, 2);
+      }
+
+      async function loadGraph() {
+        try {
+          const response = await fetch('/extract');
+          if (!response.ok) {
+            throw new Error(`Failed to load graph: ${response.status} ${response.statusText}`);
+          }
+
+          const graphData = await response.json();
+
+          status.textContent = 'Graph loaded successfully.';
+
+          const cy = cytoscape({
+            container: document.getElementById('graph'),
+            boxSelectionEnabled: false,
+            autoungrabify: true,
+            elements: graphData,
+            style: [
+              {
+                selector: 'node[type="entity"]',
+                style: {
+                  'background-color': '#2563eb',
+                  'label': 'data(label)',
+                  'color': '#ffffff',
+                  'text-valign': 'center',
+                  'text-halign': 'center',
+                  'width': 'label',
+                  'padding': '12px',
+                  'shape': 'roundrectangle'
+                }
+              },
+              {
+                selector: 'node[type="alias"]',
+                style: {
+                  'background-color': '#f59e0b',
+                  'label': 'data(label)',
+                  'color': '#111827',
+                  'text-valign': 'center',
+                  'text-halign': 'center',
+                  'width': 'label',
+                  'padding': '10px',
+                  'shape': 'ellipse'
+                }
+              },
+              {
+                selector: 'edge',
+                style: {
+                  'width': 2,
+                  'line-color': '#9ca3af',
+                  'target-arrow-color': '#9ca3af',
+                  'target-arrow-shape': 'triangle',
+                  'curve-style': 'bezier',
+                  'label': 'data(label)',
+                  'font-size': 10,
+                  'text-rotation': 'autorotate',
+                  'text-margin-y': -8
+                }
+              },
+              {
+                selector: ':selected',
+                style: {
+                  'border-width': 3,
+                  'border-color': '#10b981'
+                }
+              }
+            ],
+            layout: {
+              name: 'cose',
+              idealEdgeLength: 120,
+              nodeOverlap: 20,
+              refresh: 20,
+              fit: true,
+            }
+          });
+
+          cy.on('tap', 'node', (event) => {
+            details.textContent = formatNodeData(event.target);
+          });
+
+          cy.on('tap', (event) => {
+            if (event.target === cy) {
+              details.textContent = 'No node selected.';
+            }
+          });
+        } catch (error) {
+          status.textContent = error.message;
+          details.textContent = 'Unable to display graph.';
+          console.error(error);
+        }
+      }
+
+      loadGraph();
+    </script>
+  </body>
+</html>
