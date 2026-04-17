@@ -19,10 +19,10 @@ logger = logging.getLogger(__name__)
 def create_app():
     app = Flask(__name__)
 
-    @app.route('/health', methods=['GET'])
+    @app.route('/healthcheck/ready', methods=['GET'])
     def health_check():
         """Simple health check endpoint."""
-        return jsonify({"status": "healthy"}), 200
+        return "Application OK", 200
 
     @app.route('/extract', methods=['GET'])
     async def extract_quotes():
