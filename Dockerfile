@@ -17,6 +17,7 @@ RUN uv sync --no-dev --no-install-project
 
 COPY src/ ./src/
 COPY app.py ./app.py
+# COPY graph.json ./
 
 
 
