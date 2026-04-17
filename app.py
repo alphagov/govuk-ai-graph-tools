@@ -2,7 +2,7 @@ import os
 import logging
 from flask import Flask, request, jsonify, render_template
 from dotenv import load_dotenv
-from src.generate_graph import generate_graph
+from src.generate_graph import generate_graph, load_graph_viewmodel
 
 load_dotenv()
 
@@ -23,6 +23,18 @@ def create_app():
     def graph_page():
         """Serve the Cytoscape graph viewer page."""
         return render_template('graph.html')
+
+    @app.route('/graph-viewmodel', methods=['GET'])
+    async def graph_viewmodel():
+        """Serve the graph data as JSON for the frontend."""
+        try:
+            logger.info('Loading graph data for viewmodel endpoint...')
+            graph_data = load_graph_viewmodel("graph-viewmodel.json")
+            logger.info('Graph data loaded successfully.')
+            return jsonify(graph_data), 200
+        except Exception as e:
+            app.logger.error(f"Error loading graph data: {str(e)}")
+            return jsonify({"error": str(e)}), 500
 
     @app.route('/healthcheck/ready', methods=['GET'])
     def health_check():
