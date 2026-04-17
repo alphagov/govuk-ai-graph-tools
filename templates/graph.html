@@ -14,19 +14,46 @@
     <main>
       <div id="graph"></div>
       <aside class="sidebar">
-        <h2></h2>
-        <pre id="node-details">No node selected.</pre>
+        <h2 id="sidebar-title">No node selected</h2>
+        <div id="node-details">Select a node to view details.</div>
       </aside>
     </main>
 
     <script src="https://unpkg.com/cytoscape@3.4.0/dist/cytoscape.min.js"></script>
     <script>
       const status = document.querySelector('.status');
+      const sidebarTitle = document.getElementById('sidebar-title');
       const details = document.getElementById('node-details');
 
-      function formatNodeData(node) {
+      function escapeHtml(value) {
+        return String(value || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function renderNodeDetails(node) {
         const data = node.data();
-        return JSON.stringify(data, null, 2);
+        sidebarTitle.textContent = data.label || 'Selected node';
+
+        const occurrences = Array.isArray(data.occurrences) ? data.occurrences : [];
+        if (!occurrences.length) {
+          details.innerHTML = '<p>No occurrences available.</p>';
+          return;
+        }
+
+        details.innerHTML = occurrences.map(item => {
+          const link = escapeHtml(item.link);
+          const context = item.context;
+          return `
+            <section>
+              <p><a href="${link}" target="_blank" rel="noopener noreferrer">View on GOV.UK</a></p>
+              <p>${context}</p>
+            </section>
+          `;
+        }).join('');
       }
 
       async function loadGraph() {
@@ -104,12 +131,13 @@
           });
 
           cy.on('tap', 'node', (event) => {
-            details.textContent = formatNodeData(event.target);
+            renderNodeDetails(event.target);
           });
 
           cy.on('tap', (event) => {
             if (event.target === cy) {
-              details.textContent = 'No node selected.';
+              sidebarTitle.textContent = 'No node selected';
+              details.innerHTML = '<p>Select a node to view details.</p>';
             }
           });
         } catch (error) {
