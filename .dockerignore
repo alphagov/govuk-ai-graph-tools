@@ -1,0 +1,11 @@
+.git
+.venv
+__pycache__
+*.pyc
+.ipynb_checkpoints
+outputs/
+# No longer ignoring *.json because graph.json is required
+.env
+.python-version
+README.md
+tests/
