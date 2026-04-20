@@ -21,24 +21,18 @@ def slugify(text: str) -> str:
     return text.strip('_')
 
 def build_registries(entities: List[Entity]) -> Dict[str, Any]:
-    """Parses entities to map s3_uris to keywords and metadata."""
+    """Parses entities to map s3_uris to keywords and metadata based on structured aliases."""
     registry = defaultdict(lambda: {"keywords": set(), "entities": []})
     
     for ent in entities:
-        props = ent.properties
-        source_urls_raw = props.get("sourceUrls", [])
-        
-        if isinstance(source_urls_raw, str):
-            s3_uris = [u.strip() for u in source_urls_raw.split(',')]
-        else:
-            s3_uris = source_urls_raw
-            
-        aliases = ent.aliases
-        
-        for uri in s3_uris:
-            if not uri: continue
-            registry[uri]["keywords"].update(aliases)
-            registry[uri]["entities"].append(ent)
+        for alias in ent.aliases:
+            for uri in alias.source_files:
+                if not uri or not uri.startswith("s3://"):
+                    continue
+                registry[uri]["keywords"].add(alias.name)
+                # Ensure each entity is only added once per unique URI
+                if ent not in registry[uri]["entities"]:
+                    registry[uri]["entities"].append(ent)
             
     return registry
 
@@ -68,11 +62,10 @@ def map_findings_to_entities(raw_findings: List[Dict[str, Any]], registry: Dict[
         uri = finding["source"]
         keyword = finding["keyword_matched"]
         content = finding["content"]
-        link = finding["link"] # Use the pre-calculated link from extractor
+        link = finding["link"] 
         
         for ent in registry[uri]["entities"]:
-            # ent is an Entity model instance
-            if keyword in ent.aliases:
+            if any(a.name == keyword for a in ent.aliases):
                 occurrence = Occurrence(
                     link=link,
                     context=highlight_occurrence(content, keyword)
@@ -93,7 +86,8 @@ def build_node_structure(entities: List[Entity], entity_results: Dict[str, Any])
         # Use a dict to accumulate alias nodes by their slugified ID to avoid duplicates
         alias_map = {}
         
-        for alias in ent.aliases:
+        for alias_obj in ent.aliases:
+            alias = alias_obj.name
             occurrences = entity_results[ent_id].get(alias, [])
             alias_id = f"{ent_id}__{slugify(alias)}"
             

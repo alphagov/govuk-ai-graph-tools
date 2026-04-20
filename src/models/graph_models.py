@@ -1,13 +1,15 @@
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Dict, Union, Any, Literal
 
-# --- Input Models (from graph.json) ---
+class Alias(BaseModel):
+    name: str
+    source_files: List[str] = Field(default_factory=list)
 
 class Entity(BaseModel):
     id: str
     canonical_key: str
     label: Optional[str] = None
-    aliases: List[str] = Field(default_factory=list)
+    aliases: List[Alias] = Field(default_factory=list)
     properties: Dict[str, Any] = Field(default_factory=dict)
     type: Optional[str] = None
     description: Optional[str] = None
@@ -18,8 +20,6 @@ class GraphInput(BaseModel):
     entities: List[Entity]
     
     model_config = ConfigDict(extra="allow")
-
-# --- Output Models (for Cytoscape) ---
 
 class Occurrence(BaseModel):
     link: str
