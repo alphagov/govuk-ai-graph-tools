@@ -9,7 +9,7 @@ def test_graph_input_validation():
                 "id": "e1",
                 "canonical_key": "test_entity",
                 "label": "Test Entity",
-                "aliases": ["alias1", "alias2"],
+                "aliases": [{"name": "alias1"}, {"name": "alias2"}],
                 "properties": {"sourceUrls": "s3://bucket/key"}
             }
         ]
