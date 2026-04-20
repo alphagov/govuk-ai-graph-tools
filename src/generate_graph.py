@@ -8,6 +8,9 @@ from collections import defaultdict
 from src.content_extractor.s3_sequential import S3QuoteExtractor
 from src.content_extractor.base import BaseExtractorConfig
 from src.content_extractor.highlighter import highlight_occurrence
+from src.models.graph_models import (
+    GraphInput, GraphOutput, Node, NodeData, Edge, EdgeData, Occurrence, Entity
+)
 
 logger = logging.getLogger(__name__)
 
@@ -17,25 +20,19 @@ def slugify(text: str) -> str:
     text = re.sub(r'[^a-z0-9]+', '_', text)
     return text.strip('_')
 
-def build_registries(entities: List[Dict[str, Any]]) -> Dict[str, Any]:
-    """Parses entities to map s3_uris to keywords and metadata."""
+def build_registries(entities: List[Entity]) -> Dict[str, Any]:
+    """Parses entities to map s3_uris to keywords and metadata based on structured aliases."""
     registry = defaultdict(lambda: {"keywords": set(), "entities": []})
     
     for ent in entities:
-        props = ent.get("properties", {})
-        source_urls_raw = props.get("sourceUrls", [])
-        
-        if isinstance(source_urls_raw, str):
-            s3_uris = [u.strip() for u in source_urls_raw.split(',')]
-        else:
-            s3_uris = source_urls_raw
-            
-        aliases = ent.get("aliases", [])
-        
-        for uri in s3_uris:
-            if not uri: continue
-            registry[uri]["keywords"].update(aliases)
-            registry[uri]["entities"].append(ent)
+        for alias in ent.aliases:
+            for uri in alias.source_files:
+                if not uri or not uri.startswith("s3://"):
+                    continue
+                registry[uri]["keywords"].add(alias.name)
+                # Ensure each entity is only added once per unique URI
+                if ent not in registry[uri]["entities"]:
+                    registry[uri]["entities"].append(ent)
             
     return registry
 
@@ -65,63 +62,64 @@ def map_findings_to_entities(raw_findings: List[Dict[str, Any]], registry: Dict[
         uri = finding["source"]
         keyword = finding["keyword_matched"]
         content = finding["content"]
-        link = finding["link"] # Use the pre-calculated link from extractor
+        link = finding["link"] 
         
         for ent in registry[uri]["entities"]:
-            if keyword in ent.get("aliases", []):
-                occurrence = {
-                    "link": link,
-                    "context": highlight_occurrence(content, keyword)
-                }
-                results[ent["canonical_key"]][keyword].append(occurrence)
+            if any(a.name == keyword for a in ent.aliases):
+                occurrence = Occurrence(
+                    link=link,
+                    context=highlight_occurrence(content, keyword)
+                )
+                results[ent.canonical_key][keyword].append(occurrence)
                 
     return results
 
-def build_node_structure(entities: List[Dict[str, Any]], entity_results: Dict[str, Any]) -> Dict[str, Any]:
+def build_node_structure(entities: List[Entity], entity_results: Dict[str, Any]) -> GraphOutput:
     """Constructs the final list of nodes and edges."""
     nodes, edges = [], []
 
     for ent in entities:
-        ent_id = ent["canonical_key"]
-        human_label = ent.get("label") or ent_id.replace("_", " ").title()
-        nodes.append({"data": {"id": ent_id, "label": human_label, "type": "entity"}})
+        ent_id = ent.canonical_key
+        human_label = ent.label or ent_id.replace("_", " ").title()
+        nodes.append(Node(data=NodeData(id=ent_id, label=human_label, type="entity")))
         
         # Use a dict to accumulate alias nodes by their slugified ID to avoid duplicates
         alias_map = {}
         
-        for alias in ent.get("aliases", []):
+        for alias_obj in ent.aliases:
+            alias = alias_obj.name
             occurrences = entity_results[ent_id].get(alias, [])
             alias_id = f"{ent_id}__{slugify(alias)}"
             
             if alias_id not in alias_map:
-                alias_map[alias_id] = {
-                    "id": alias_id,
-                    "label": alias,
-                    "type": "alias",
-                    "occurrences": []
-                }
+                alias_map[alias_id] = NodeData(
+                    id=alias_id,
+                    label=alias,
+                    type="alias",
+                    occurrences=[]
+                )
             
             if occurrences:
-                alias_map[alias_id]["occurrences"].extend(occurrences)
+                alias_map[alias_id].occurrences.extend(occurrences)
         
         # Add the deduplicated alias nodes and their edges
-        for alias_id, alias_data in alias_map.items():
-            # If no occurrences, remove the empty list from the data
-            if not alias_data["occurrences"]:
-                del alias_data["occurrences"]
+        for alias_id, node_data in alias_map.items():
+            # If no occurrences, clear the list (Pydantic will handle Optional)
+            if not node_data.occurrences:
+                node_data.occurrences = None
             
-            nodes.append({"data": alias_data})
+            nodes.append(Node(data=node_data))
             
-            count = len(alias_data.get("occurrences", []))
-            edges.append({
-                "data": {
-                    "source": ent_id,
-                    "target": alias_id,
-                    "label": f"Alias ({count})" if count > 0 else "Alias"
-                }
-            })
+            count = len(node_data.occurrences) if node_data.occurrences else 0
+            edges.append(Edge(
+                data=EdgeData(
+                    source=ent_id,
+                    target=alias_id,
+                    label=f"Alias ({count})" if count > 0 else "Alias"
+                )
+            ))
 
-    return {"nodes": nodes, "edges": edges}
+    return GraphOutput(nodes=nodes, edges=edges)
 
 async def generate_graph(input_data: Union[str, Dict[str, Any]], output_path: Optional[str] = None):
     """Main orchestration function. Can take a file path (str) or a dictionary."""
@@ -134,13 +132,21 @@ async def generate_graph(input_data: Union[str, Dict[str, Any]], output_path: Op
     else:
         graph_data = input_data
     
-    entities = graph_data.get("entities", [])
+    # Validate input
+    try:
+        validated_input = GraphInput.model_validate(graph_data)
+        entities = validated_input.entities
+    except Exception as e:
+        logger.error(f"Input validation failed: {e}")
+        raise
+
     registry = build_registries(entities)
     
     raw_findings = await fetch_extraction_findings(registry)
     entity_results = map_findings_to_entities(raw_findings, registry)
     
-    cy_json = build_node_structure(entities, entity_results)
+    cy_graph = build_node_structure(entities, entity_results)
+    cy_json = cy_graph.model_dump(exclude_none=True)
     
     if output_path:
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
