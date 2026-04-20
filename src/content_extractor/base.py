@@ -64,7 +64,13 @@ class BaseQuoteExtractor:
                 "2. the keyword that was matched as 'keyword_matched'\n\n"
                 "If a keyword appears multiple times in different sentences, extract each unique sentence. "
                 "If no matches are found, return an empty list of quotes.\n"
-                "Also note source document is a markdown file; consider this when pre-cleaning."
+               """IMPORTANT: The source is a Markdown file. You MUST return 'content' that matches the RENDERED text, not the raw source. "
+                Apply these cleaning rules to every extracted quote:
+                - Remove Markdown link syntax: change [link text](url) to just link text.
+                - Strip formatting: remove all **, *, __, _, and ` symbols.
+                - Strip list markers: remove leading '* ', '- ', '+ ', or '1. ' types of bullet points.
+                - Strip headers: remove leading '#' symbols."""
+                
             )
         )
 
