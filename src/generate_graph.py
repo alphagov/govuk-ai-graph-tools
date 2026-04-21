@@ -156,5 +156,17 @@ async def generate_graph(input_data: Union[str, Dict[str, Any]], output_path: Op
     
     return cy_json
 
+def load_json_file(file_path: str) -> Dict[str, Any]:
+    """Utility function to load JSON data from a file."""
+    if not os.path.exists(file_path):
+        logger.error(f"File {file_path} not found.")
+        return {}
+    with open(file_path, "r") as f:
+        return json.load(f)
+
+def load_graph_viewmodel(file_path: str) -> Dict[str, Any]:
+    """Loads the graph viewmodel JSON for the frontend."""
+    return load_json_file(file_path)
+
 if __name__ == "__main__":
     asyncio.run(generate_graph("graph.json", "outputs/graphNode.json"))
