@@ -36,7 +36,6 @@ main {
 }
 
 .sidebar #node-details {
-  white-space: pre-wrap;
   word-break: break-word;
   background: #ffffff;
   border: 1px solid #d1d5db;
@@ -46,6 +45,11 @@ main {
 
 .sidebar #node-details section {
   margin-bottom: 1rem;
+  border-bottom: 1px solid #d1d5db;
+}
+
+.sidebar #node-details section:last-child {
+  border-bottom: none;
 }
 
 .sidebar #node-details a {
@@ -65,7 +69,5 @@ main {
 
 .occurrence {
     background-color: #ffeb3b;
-    padding: 0.2em 0.4em;
-    border-radius: 4px;
     font-weight: bold;
 }
