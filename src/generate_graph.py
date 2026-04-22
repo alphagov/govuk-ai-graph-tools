@@ -126,12 +126,14 @@ def build_node_structure(entities: List[Entity], entity_results: Dict[str, Any])
 async def generate_graph(input_data: Union[str, Dict[str, Any]], output_path: Optional[str] = None):
     """Main orchestration function. Can take a file path (str) or a dictionary."""
     if isinstance(input_data, str):
-        fs = fsspec.filesystem("s3")
-        if fs.exists(input_data):
-            with fs.open(input_data, "r") as f:
+        try:
+            with fsspec.open(input_data, "r") as f:
                 graph_data = json.load(f)
-        else:
-            raise FileNotFoundError(f"Input file {input_data} not found.")
+        except FileNotFoundError:
+            logger.error(f"Input file {input_data} not found.")
+            raise
+    else:
+        graph_data = input_data
     
     # Validate input
     try:
@@ -158,13 +160,11 @@ async def generate_graph(input_data: Union[str, Dict[str, Any]], output_path: Op
 
 def load_json_file(file_path: str) -> Dict[str, Any]:
     """Utility function to load JSON data from a file."""
-    fs = fsspec.filesystem('s3')    
-    if fs.exists(file_path):
-        with fs.open(file_path, "r") as f:
-            return json.load(f)
-    else:
-        raise FileNotFoundError(f"File {file_path} not found.") 
-   
+    if not os.path.exists(file_path):
+        logger.error(f"File {file_path} not found.")
+        return {}
+    with open(file_path, "r") as f:
+        return json.load(f)
 
 def load_graph_viewmodel(file_path: str) -> Dict[str, Any]:
     """Loads the graph viewmodel JSON for the frontend."""
