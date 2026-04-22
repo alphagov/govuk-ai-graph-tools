@@ -15,7 +15,7 @@
       <div id="graph"></div>
       <aside class="sidebar">
         <h2 id="sidebar-title">No node selected</h2>
-        <div id="node-details">Select a node to view details.</div>
+        <div id="node-details"><p>Select a node to view details.</p></div>
       </aside>
     </main>
 
@@ -36,12 +36,15 @@
 
       function renderNodeDetails(node) {
         const data = node.data();
-        sidebarTitle.textContent = data.label || 'Selected node';
+        sidebarTitle.textContent = data.label;
 
         const occurrences = Array.isArray(data.occurrences) ? data.occurrences : [];
         if (!occurrences.length) {
           details.innerHTML = '<p>No occurrences available.</p>';
           return;
+        }
+        else {
+          sidebarTitle.textContent += ` (${occurrences.length} occurrence${occurrences.length > 1 ? 's' : ''})`;
         }
 
         details.innerHTML = occurrences.map(item => {
@@ -78,12 +81,15 @@
                 style: {
                   'background-color': '#2563eb',
                   'label': 'data(label)',
-                  'color': '#ffffff',
+                  'color': '#000000',
                   'text-valign': 'center',
                   'text-halign': 'center',
-                  'width': 'label',
+                  'width': '15px',
+                  'height': '15px',
                   'padding': '12px',
-                  'shape': 'roundrectangle'
+                  'shape': 'ellipse',
+                  'text-halign': 'right',
+                  'text-margin-x': 5,
                 }
               },
               {
@@ -94,9 +100,12 @@
                   'color': '#111827',
                   'text-valign': 'center',
                   'text-halign': 'center',
-                  'width': 'label',
+                  'width': '15px',
+                  'height': '15px',
                   'padding': '10px',
-                  'shape': 'ellipse'
+                  'shape': 'ellipse',
+                  'text-halign': 'right',
+                  'text-margin-x': 5,
                 }
               },
               {
@@ -123,10 +132,9 @@
             ],
             layout: {
               name: 'cose',
-              idealEdgeLength: 120,
-              nodeOverlap: 20,
-              refresh: 20,
               fit: true,
+              nodeDimensionsIncludeLabels: true,
+              componentSpacing: 200,
             }
           });
 
