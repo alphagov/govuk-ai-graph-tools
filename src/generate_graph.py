@@ -183,16 +183,16 @@ def generate_output_path(input_path: str) -> str:
     """Generates the output path for the graph JSON file."""
     
 
-    match = re.search(r'(?P<base>s3://govuk-ai-accelerator-data-integration/)?(?P<doamin_name>[^/]+)/(?P<run>run-\d+-\d+)', input_path)
+    match = re.search(r'(?P<base>s3://govuk-ai-accelerator-data-integration/)?(?P<domain_name>[^/]+)/(?P<run>run-\d+-\d+)', input_path)
     
     if match:
         base = match.group('base')
-        doamin_name = match.group('doamin_name')
+        domain_name = match.group('domain_name')
         run_id = match.group('run')
         
         if base:
             # Dynamically use the same S3 bucket but route to graph_tools prefix
-            return f"{base}graph_tools/{doamin_name}/output/graphNode.json"
+            return f"{base}graph_tools/{domain_name}/output/graphNode.json"
             
         else:
             raise ValueError(f"Input path '{input_path}' does not contain a recognizable S3 path structure.")
