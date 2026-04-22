@@ -43,6 +43,9 @@
           details.innerHTML = '<p>No occurrences available.</p>';
           return;
         }
+        else {
+          sidebarTitle.textContent += ` (${occurrences.length} occurrence${occurrences.length > 1 ? 's' : ''})`;
+        }
 
         details.innerHTML = occurrences.map(item => {
           const link = escapeHtml(item.link);
