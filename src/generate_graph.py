@@ -126,14 +126,12 @@ def build_node_structure(entities: List[Entity], entity_results: Dict[str, Any])
 async def generate_graph(input_data: Union[str, Dict[str, Any]], output_path: Optional[str] = None):
     """Main orchestration function. Can take a file path (str) or a dictionary."""
     if isinstance(input_data, str):
-        of = fsspec.open(input_data, "r")
-        if not of.fs.exists(of.path):
-            logger.error(f"Input file {input_data} not found.")
-            return
-        with of as f:
-            graph_data = json.load(f)
-    else:
-        graph_data = input_data
+        fs = fsspec.filesystem("s3")
+        if fs.exists(input_data):
+            with fs.open(input_data, "r") as f:
+                graph_data = json.load(f)
+        else:
+            raise FileNotFoundError(f"Input file {input_data} not found.")
     
     # Validate input
     try:
@@ -165,8 +163,8 @@ def load_json_file(file_path: str) -> Dict[str, Any]:
         with fs.open(file_path, "r") as f:
             return json.load(f)
     else:
-        raise FileNotFoundError(f"File {file_path} not found.")
-            
+        raise FileNotFoundError(f"File {file_path} not found.") 
+   
 
 def load_graph_viewmodel(file_path: str) -> Dict[str, Any]:
     """Loads the graph viewmodel JSON for the frontend."""
@@ -192,9 +190,7 @@ def generate_output_path(input_path: str) -> str:
         run_id = match.group('run')
         
         if base:
-            # Dynamically use the same S3 bucket but route to graph_tools prefix
-            return f"{base}graph_tools/{domain_name}/output/graphNode.json"
-            
+            return f"{base}graph_tools/{domain_name}/{run_id}/graphNode.json"
         else:
             raise ValueError(f"Input path '{input_path}' does not contain a recognizable S3 path structure.")
     
