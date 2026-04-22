@@ -1,6 +1,6 @@
 import pytest
 from src.models.graph_models import GraphInput, GraphOutput
-from src.generate_graph import slugify
+from src.visualiser_graph_generator import slugify
 
 def test_graph_input_validation():
     data = {

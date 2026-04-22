@@ -2,7 +2,7 @@ import os
 import logging
 from flask import Flask, request, jsonify, render_template
 from dotenv import load_dotenv
-from src.generate_graph import generate_graph, generate_output_path, summarize_path
+from src.visualiser_graph_generator import generate_graph, generate_output_path, summarize_path
 from src.visualiser_graph_loader import load_graph
 
 load_dotenv()
