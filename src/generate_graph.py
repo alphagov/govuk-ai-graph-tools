@@ -8,9 +8,11 @@ from collections import defaultdict
 from src.content_extractor.s3_sequential import S3QuoteExtractor
 from src.content_extractor.base import BaseExtractorConfig
 from src.content_extractor.highlighter import highlight_occurrence
+import fsspec
 from src.models.graph_models import (
     GraphInput, GraphOutput, Node, NodeData, Edge, EdgeData, Occurrence, Entity
 )
+
 
 logger = logging.getLogger(__name__)
 
@@ -124,10 +126,11 @@ def build_node_structure(entities: List[Entity], entity_results: Dict[str, Any])
 async def generate_graph(input_data: Union[str, Dict[str, Any]], output_path: Optional[str] = None):
     """Main orchestration function. Can take a file path (str) or a dictionary."""
     if isinstance(input_data, str):
-        if not os.path.exists(input_data):
+        of = fsspec.open(input_data, "r")
+        if not of.fs.exists(of.path):
             logger.error(f"Input file {input_data} not found.")
             return
-        with open(input_data, "r") as f:
+        with of as f:
             graph_data = json.load(f)
     else:
         graph_data = input_data
@@ -149,24 +152,53 @@ async def generate_graph(input_data: Union[str, Dict[str, Any]], output_path: Op
     cy_json = cy_graph.model_dump(exclude_none=True)
     
     if output_path:
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        with open(output_path, "w") as f:
+        with fsspec.open(output_path, "w", auto_mkdir=True) as f:
             json.dump(cy_json, f, indent=4)
-        logger.info(f"Graph saved to {output_path}")
+        logger.info(f"Graph saved to {summarize_path(output_path)}")
     
     return cy_json
 
 def load_json_file(file_path: str) -> Dict[str, Any]:
     """Utility function to load JSON data from a file."""
-    if not os.path.exists(file_path):
+    of = fsspec.open(file_path, "r")
+    if not of.fs.exists(of.path):
         logger.error(f"File {file_path} not found.")
         return {}
-    with open(file_path, "r") as f:
+    with of as f:
         return json.load(f)
 
 def load_graph_viewmodel(file_path: str) -> Dict[str, Any]:
     """Loads the graph viewmodel JSON for the frontend."""
     return load_json_file(file_path)
+
+
+def summarize_path(path: str) -> str:
+    """Extracts a concise representation (project/run) of a path for logging."""
+    match = re.search(r'([^/]+)/(run-\d+-\d+)', path)
+    if match:
+        return f"{match.group(1)}/{match.group(2)}"
+    return path.split('/')[-1]
+
+def generate_output_path(input_path: str) -> str:
+    """Generates the output path for the graph JSON file."""
+    output_dir = os.getenv("OUTPUT_DIRECTORY", "outputs")
+    
+
+    match = re.search(r'(?P<base>s3://[^/]+/)?(?P<project>[^/]+)/(?P<run>run-\d+-\d+)', input_path)
+    
+    if match:
+        base = match.group('base')
+        project = match.group('project')
+        run_id = match.group('run')
+        
+        if base:
+            # Dynamically use the same S3 bucket but route to graph_tools prefix
+            return f"{base}graph_tools/{project}/{run_id}/graphNode.json"
+            
+        return f"{output_dir}/{project}/{run_id}/graphNode.json"
+    
+    summary = summarize_path(input_path)
+    raise ValueError(f"Input path '{summary}' does not contain a recognizable project/run structure.")
 
 if __name__ == "__main__":
     asyncio.run(generate_graph("graph.json", "outputs/graphNode.json"))
