@@ -15,7 +15,7 @@
       <div id="graph"></div>
       <aside class="sidebar">
         <h2 id="sidebar-title">No node selected</h2>
-        <div id="node-details">Select a node to view details.</div>
+        <div id="node-details"><p>Select a node to view details.</p></div>
       </aside>
     </main>
 
@@ -36,7 +36,7 @@
 
       function renderNodeDetails(node) {
         const data = node.data();
-        sidebarTitle.textContent = data.label || 'Selected node';
+        sidebarTitle.textContent = data.label;
 
         const occurrences = Array.isArray(data.occurrences) ? data.occurrences : [];
         if (!occurrences.length) {
