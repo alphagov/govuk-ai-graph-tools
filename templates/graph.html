@@ -78,12 +78,15 @@
                 style: {
                   'background-color': '#2563eb',
                   'label': 'data(label)',
-                  'color': '#ffffff',
+                  'color': '#000000',
                   'text-valign': 'center',
                   'text-halign': 'center',
-                  'width': 'label',
+                  'width': '15px',
+                  'height': '15px',
                   'padding': '12px',
-                  'shape': 'roundrectangle'
+                  'shape': 'ellipse',
+                  'text-halign': 'right',
+                  'text-margin-x': 5,
                 }
               },
               {
@@ -94,9 +97,12 @@
                   'color': '#111827',
                   'text-valign': 'center',
                   'text-halign': 'center',
-                  'width': 'label',
+                  'width': '15px',
+                  'height': '15px',
                   'padding': '10px',
-                  'shape': 'ellipse'
+                  'shape': 'ellipse',
+                  'text-halign': 'right',
+                  'text-margin-x': 5,
                 }
               },
               {
@@ -124,6 +130,8 @@
             layout: {
               name: 'cose',
               fit: true,
+              nodeDimensionsIncludeLabels: true,
+              componentSpacing: 200,
             }
           });
 
