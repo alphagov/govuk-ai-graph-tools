@@ -181,21 +181,21 @@ def summarize_path(path: str) -> str:
 
 def generate_output_path(input_path: str) -> str:
     """Generates the output path for the graph JSON file."""
-    output_dir = os.getenv("OUTPUT_DIRECTORY", "outputs")
     
 
-    match = re.search(r'(?P<base>s3://[^/]+/)?(?P<project>[^/]+)/(?P<run>run-\d+-\d+)', input_path)
+    match = re.search(r'(?P<base>s3://govuk-ai-accelerator-data-integration/)?(?P<doamin_name>[^/]+)/(?P<run>run-\d+-\d+)', input_path)
     
     if match:
         base = match.group('base')
-        project = match.group('project')
+        doamin_name = match.group('doamin_name')
         run_id = match.group('run')
         
         if base:
             # Dynamically use the same S3 bucket but route to graph_tools prefix
-            return f"{base}graph_tools/{project}/{run_id}/graphNode.json"
+            return f"{base}graph_tools/{doamin_name}/output/graphNode.json"
             
-        return f"{output_dir}/{project}/{run_id}/graphNode.json"
+        else:
+            raise ValueError(f"Input path '{input_path}' does not contain a recognizable S3 path structure.")
     
     summary = summarize_path(input_path)
     raise ValueError(f"Input path '{summary}' does not contain a recognizable project/run structure.")
