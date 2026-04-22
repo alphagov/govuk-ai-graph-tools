@@ -183,7 +183,7 @@ def summarize_path(path: str) -> str:
 def generate_output_path(input_path: str) -> str:
     """Generates the output path for the graph JSON file."""
     
-
+    #TODO: make input from user be relative without the bucketname applied
     match = re.search(r'(?P<base>s3://govuk-ai-accelerator-data-integration/)?(?P<domain_name>[^/]+)/(?P<run>run-\d+-\d+)', input_path)
     
     if match:
