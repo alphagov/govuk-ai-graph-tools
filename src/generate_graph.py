@@ -160,12 +160,13 @@ async def generate_graph(input_data: Union[str, Dict[str, Any]], output_path: Op
 
 def load_json_file(file_path: str) -> Dict[str, Any]:
     """Utility function to load JSON data from a file."""
-    of = fsspec.open(file_path, "r")
-    if not of.fs.exists(of.path):
-        logger.error(f"File {file_path} not found.")
-        return {}
-    with of as f:
-        return json.load(f)
+    fs = fsspec.filesystem('s3')    
+    if fs.exists(file_path):
+        with fs.open(file_path, "r") as f:
+            return json.load(f)
+    else:
+        raise FileNotFoundError(f"File {file_path} not found.")
+            
 
 def load_graph_viewmodel(file_path: str) -> Dict[str, Any]:
     """Loads the graph viewmodel JSON for the frontend."""

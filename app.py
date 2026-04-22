@@ -50,12 +50,12 @@ def create_app():
             input_path = request.args.get('input_path')
             if not input_path:
                 return jsonify({"error": "Missing 'input_path' query parameter"}), 400
-                
+
             output_path = generate_output_path(input_path)
             logger.info(f'Starting graph generation process for {summarize_path(input_path)}...')
             graph_data = await generate_graph(input_path, output_path)
             logger.info('Graph generation completed successfully.')
-            return jsonify(graph_data), 200
+            return jsonify({'status': 'running'}), 200
 
         except Exception as e:
             app.logger.error(f"Error generating graph: {str(e)}")
