@@ -2,7 +2,7 @@ import os
 import logging
 from flask import Flask, request, jsonify, render_template
 from dotenv import load_dotenv
-from src.generate_graph import generate_graph, load_graph_viewmodel
+from src.generate_graph import generate_graph, load_graph_viewmodel, generate_output_path, summarize_path
 
 load_dotenv()
 
@@ -47,11 +47,15 @@ def create_app():
         Endpoint that runs the Cytoscape graph generation logic based on graph.json.
         """
         try:
-            logger.info('Starting graph generation process...')
-            graph_data = await generate_graph("graph.json")
+            input_path = request.args.get('input_path')
+            if not input_path:
+                return jsonify({"error": "Missing 'input_path' query parameter"}), 400
+
+            output_path = generate_output_path(input_path)
+            logger.info(f'Starting graph generation process for {summarize_path(input_path)}...')
+            graph_data = await generate_graph(input_path, output_path)
             logger.info('Graph generation completed successfully.')
-            
-            return jsonify(graph_data), 200
+            return jsonify({'status': 'running'}), 200
 
         except Exception as e:
             app.logger.error(f"Error generating graph: {str(e)}")
