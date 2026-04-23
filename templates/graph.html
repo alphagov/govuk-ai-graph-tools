@@ -61,7 +61,7 @@
 
       async function loadGraph() {
         try {
-          const response = await fetch('/graph-viewmodel');
+          const response = await fetch('/graph-viewmodel?source_path={{ source_path }}');
           if (!response.ok) {
             throw new Error(`Failed to load graph: ${response.status} ${response.statusText}`);
           }

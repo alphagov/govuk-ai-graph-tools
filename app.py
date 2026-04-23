@@ -1,19 +1,23 @@
-import os
-import logging
 import asyncio
-import uuid
+import fsspec
 import json
+import logging
+import os
+import re
 import time
-from flask import Flask, request, jsonify, render_template
+import uuid
+from asgiref.wsgi import WsgiToAsgi
 from dotenv import load_dotenv
+from flask import Flask, request, jsonify, render_template
 from src.visualiser_graph_generator import generate_graph, generate_output_path
 from src.visualiser_graph_loader import load_graph
-import fsspec
-from asgiref.wsgi import WsgiToAsgi
 from src.utils import update_job_status, read_job_status
 
 
 load_dotenv()
+
+ONTOLOGY_RUN_PATH_PATTERN = r'(?P<domain_name>[a-zA-Z0-9_-]+)/(?P<run>run-\d+-\d+)'
+S3_BUCKET_NAME = "govuk-ai-accelerator-data-integration"
 
 # Configure logging
 logging.basicConfig(
@@ -31,19 +35,42 @@ def create_app():
     @app.route('/graph', methods=['GET'])
     def graph_page():
         """Serve the Cytoscape graph viewer page."""
-        return render_template('graph.html')
+        source_path_param = request.args.get('source_path')
+            
+        if source_path_param:
+            match = re.fullmatch(ONTOLOGY_RUN_PATH_PATTERN, source_path_param)
+            if not match:
+                logger.warning(f"Invalid 'source_path' parameter format: {source_path_param}")
+                return jsonify({"error": "Invalid 'source_path' parameter format."}), 400
+
+        return render_template('graph.html', source_path=source_path_param or '')
 
     @app.route('/graph-viewmodel', methods=['GET'])
     async def graph_viewmodel():
         """Serve the graph data as JSON for the frontend."""
         try:
-            logger.info('Loading graph data for viewmodel endpoint...')
-            graph_data = load_graph("graph-viewmodel.json")
+            source_path_param = request.args.get('source_path')
+            
+            if source_path_param:
+                match = re.fullmatch(ONTOLOGY_RUN_PATH_PATTERN, source_path_param)
+                if not match:
+                    logger.warning(f"Invalid 'source_path' parameter format: '{source_path_param}'")
+                    return jsonify({"error": "Invalid 'source_path' parameter format."}), 400
+                
+                domain_name = match.group('domain_name')
+                run_id = match.group('run')
+                filename = f"s3://{S3_BUCKET_NAME}/graph_tools/{domain_name}/{run_id}/graphNode.json"
+                logger.info(f"Loading graph data from: '{filename}'")
+            else:
+                filename = "graph-viewmodel.json"
+                logger.info('Loading default example graph data for viewmodel endpoint...')
+
+            graph_data = load_graph(filename)
             logger.info('Graph data loaded successfully.')
             return jsonify(graph_data), 200
         except Exception as e:
             app.logger.error(f"Error loading graph data: {str(e)}")
-            return jsonify({"error": str(e)}), 500
+            return jsonify({"error": "Error loading graph data."}), 500
 
     @app.route('/healthcheck/ready', methods=['GET'])
     def health_check():
