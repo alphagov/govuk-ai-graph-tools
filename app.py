@@ -10,7 +10,7 @@ from asgiref.wsgi import WsgiToAsgi
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify, render_template
 from src.visualiser_graph_generator import generate_graph, generate_output_path
-from src.visualiser_graph_loader import load_graph
+from src.visualiser_graph_loader import load_json_file
 from src.utils import update_job_status, read_job_status
 
 
@@ -65,7 +65,7 @@ def create_app():
                 filename = "graph-viewmodel.json"
                 logger.info('Loading default example graph data for viewmodel endpoint...')
 
-            graph_data = load_graph(filename)
+            graph_data = load_json_file(filename)
             logger.info('Graph data loaded successfully.')
             return jsonify(graph_data), 200
         except Exception as e:
