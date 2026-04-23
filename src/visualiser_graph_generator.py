@@ -160,7 +160,7 @@ async def generate_graph(input_data: Union[str, Dict[str, Any]], output_path: Op
 
 
 
-def generate_output_path(source_path: str) -> str:
+def generate_output_path(source_path: str) -> Tuple[str, str]:
     """Generates the output path for the graph JSON file."""
     
     #TODO: make input from user be relative without the bucketname applied
@@ -173,8 +173,8 @@ def generate_output_path(source_path: str) -> str:
         input_path= f"{s3_bucket_uri}/{source_path}"
         return input_path, output_path
     else:
-        logger.error(f"Invalid input path: {input_path}")
-        raise ValueError(f"Invalid input path: {input_path}")
+        logger.error(f"Invalid input path: {source_path}")
+        raise ValueError(f"Invalid input path: {source_path}")
     
   
 if __name__ == "__main__":
