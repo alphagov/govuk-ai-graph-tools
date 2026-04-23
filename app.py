@@ -10,14 +10,12 @@ from asgiref.wsgi import WsgiToAsgi
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify, render_template
 from src.visualiser_graph_generator import generate_graph, generate_output_path
-from src.visualiser_graph_loader import load_json_file
+from src.visualiser_graph_loader import load_json_file, extract_path_parts, visualiser_graph_file_path
 from src.utils import update_job_status, read_job_status
+from werkzeug.exceptions import BadRequest
 
 
 load_dotenv()
-
-ONTOLOGY_RUN_PATH_PATTERN = r'(?P<domain_name>[a-zA-Z0-9_-]+)/(?P<run>run-\d+-\d+)'
-S3_BUCKET_NAME = "govuk-ai-accelerator-data-integration"
 
 # Configure logging
 logging.basicConfig(
@@ -36,12 +34,10 @@ def create_app():
     def graph_page():
         """Serve the Cytoscape graph viewer page."""
         source_path_param = request.args.get('source_path')
-            
+
+        # Validate the source_path format
         if source_path_param:
-            match = re.fullmatch(ONTOLOGY_RUN_PATH_PATTERN, source_path_param)
-            if not match:
-                logger.warning(f"Invalid 'source_path' parameter format: {source_path_param}")
-                return jsonify({"error": "Invalid 'source_path' parameter format."}), 400
+            extract_path_parts(source_path_param)
 
         return render_template('graph.html', source_path=source_path_param or '')
 
@@ -51,21 +47,10 @@ def create_app():
         try:
             source_path_param = request.args.get('source_path')
             
-            if source_path_param:
-                match = re.fullmatch(ONTOLOGY_RUN_PATH_PATTERN, source_path_param)
-                if not match:
-                    logger.warning(f"Invalid 'source_path' parameter format: '{source_path_param}'")
-                    return jsonify({"error": "Invalid 'source_path' parameter format."}), 400
-                
-                domain_name = match.group('domain_name')
-                run_id = match.group('run')
-                filename = f"s3://{S3_BUCKET_NAME}/graph_tools/{domain_name}/{run_id}/graphNode.json"
-                logger.info(f"Loading graph data from: '{filename}'")
-            else:
-                filename = "graph-viewmodel.json"
-                logger.info('Loading default example graph data for viewmodel endpoint...')
+            graph_filepath = visualiser_graph_file_path(source_path_param)
 
-            graph_data = load_json_file(filename)
+            graph_data = load_json_file(graph_filepath)
+
             logger.info('Graph data loaded successfully.')
             return jsonify(graph_data), 200
         except Exception as e:
@@ -137,6 +122,10 @@ def create_app():
         if not status_info:
             return jsonify({"error": "Job ID not found"}), 404
         return jsonify(status_info), 200
+
+    @app.errorhandler(BadRequest)
+    def handle_bad_request(e):
+        return jsonify({"error": e.description}), 400
 
     return app
 
