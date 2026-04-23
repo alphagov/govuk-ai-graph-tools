@@ -2,8 +2,10 @@ import os
 import logging
 from flask import Flask, request, jsonify, render_template
 from dotenv import load_dotenv
-from src.visualiser_graph_generator import generate_graph, generate_output_path, summarize_path
+from src.visualiser_graph_generator import generate_graph, generate_output_path
 from src.visualiser_graph_loader import load_graph
+import fsspec
+
 
 load_dotenv()
 
@@ -48,15 +50,21 @@ def create_app():
         Endpoint that runs the Cytoscape graph generation logic based on graph.json.
         """
         try:
-            input_path = request.args.get('input_path')
-            if not input_path:
-                return jsonify({"error": "Missing 'input_path' query parameter"}), 400
+            source_path = request.args.get('source_path')
+            if not source_path:
+                return jsonify({"error": "Missing 'source_path' query parameter"}), 400
 
-            output_path = generate_output_path(input_path)
-            logger.info(f'Starting graph generation process for {summarize_path(input_path)}...')
-            graph_data = await generate_graph(input_path, output_path)
+            input_path, output_path = generate_output_path(source_path)
+            logger.info(f'Starting graph generation process for {input_path}...')
+            #TODO: change this to non-blocking
+            await generate_graph(input_path, output_path) 
             logger.info('Graph generation completed successfully.')
-            return jsonify({'status': 'running'}), 200
+            # temp logic to validate the output exists in s3
+            fs = fsspec.filesystem('s3')
+            if fs.exists(output_path):
+                return jsonify({'status': 'success'}), 200
+            else:
+                return jsonify({'status': 'failed'}), 500
 
         except Exception as e:
             app.logger.error(f"Error generating graph: {str(e)}")
@@ -66,14 +74,12 @@ def create_app():
 
 if __name__ == "__main__":
     app = create_app()
-    # Using Waitress as the production-ready WSGI server
     try:
         from waitress import serve
         port = int(os.getenv("PORT", 3000))
         logger.info(f"Starting Waitress server on port {port}...")
         serve(app, host='0.0.0.0', port=port)
     except ImportError:
-        # Fallback to Flask dev server if waitress is not installed (e.g. local dev without it)
         port = int(os.getenv("PORT", 3000))
         logger.warning("Waitress not found, falling back to Flask development server.")
         app.run(host='0.0.0.0', port=port)
