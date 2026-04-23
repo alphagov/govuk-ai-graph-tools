@@ -1,16 +1,18 @@
-import os
-import logging
 import asyncio
-import uuid
-import json
-import time
-from flask import Flask, request, jsonify, render_template
-from dotenv import load_dotenv
-from src.visualiser_graph_generator import generate_graph, generate_output_path
-from src.visualiser_graph_loader import load_graph
 import fsspec
+import json
+import logging
+import os
+import re
+import time
+import uuid
 from asgiref.wsgi import WsgiToAsgi
+from dotenv import load_dotenv
+from flask import Flask, request, jsonify, render_template
+from src.visualiser_graph_generator import generate_graph, generate_output_path
+from src.visualiser_graph_loader import load_json_file, extract_path_parts, visualiser_graph_file_path
 from src.utils import update_job_status, read_job_status
+from werkzeug.exceptions import BadRequest
 
 
 load_dotenv()
@@ -31,19 +33,29 @@ def create_app():
     @app.route('/graph', methods=['GET'])
     def graph_page():
         """Serve the Cytoscape graph viewer page."""
-        return render_template('graph.html')
+        source_path_param = request.args.get('source_path')
+
+        # Validate the source_path format
+        if source_path_param:
+            extract_path_parts(source_path_param)
+
+        return render_template('graph.html', source_path=source_path_param or '')
 
     @app.route('/graph-viewmodel', methods=['GET'])
     async def graph_viewmodel():
         """Serve the graph data as JSON for the frontend."""
         try:
-            logger.info('Loading graph data for viewmodel endpoint...')
-            graph_data = load_graph("graph-viewmodel.json")
+            source_path_param = request.args.get('source_path')
+            
+            graph_filepath = visualiser_graph_file_path(source_path_param)
+
+            graph_data = load_json_file(graph_filepath)
+
             logger.info('Graph data loaded successfully.')
             return jsonify(graph_data), 200
         except Exception as e:
             app.logger.error(f"Error loading graph data: {str(e)}")
-            return jsonify({"error": str(e)}), 500
+            return jsonify({"error": "Error loading graph data."}), 500
 
     @app.route('/healthcheck/ready', methods=['GET'])
     def health_check():
@@ -110,6 +122,10 @@ def create_app():
         if not status_info:
             return jsonify({"error": "Job ID not found"}), 404
         return jsonify(status_info), 200
+
+    @app.errorhandler(BadRequest)
+    def handle_bad_request(e):
+        return jsonify({"error": e.description}), 400
 
     return app
 
