@@ -160,18 +160,21 @@ async def generate_graph(input_data: Union[str, Dict[str, Any]], output_path: Op
 
 
 
-def generate_output_path(input_path: str) -> str:
+def generate_output_path(source_path: str) -> str:
     """Generates the output path for the graph JSON file."""
     
     #TODO: make input from user be relative without the bucketname applied
-    match = re.search(r'(?P<domain_name>[^/]+)/(?P<run>run-\d+-\d+)', input_path)
-    bucket_name = 's3://govuk-ai-accelerator-data-integration'
+    match = re.search(r'(?P<domain_name>[^/]+)/(?P<run>run-\d+-\d+)', source_path)
+    s3_bucket_uri = 's3://govuk-ai-accelerator-data-integration'
     if match:
         domain_name = match.group('domain_name')
         run_id = match.group('run')
-        output_path =f"{bucket_name}/graph_tools/{domain_name}/{run_id}/graphNode.json"
-        input_path= f"{bucket_name}/{input_path}"
+        output_path =f"{s3_bucket_uri}/graph_tools/{domain_name}/{run_id}/graphNode.json"
+        input_path= f"{s3_bucket_uri}/{source_path}"
         return input_path, output_path
+    else:
+        logger.error(f"Invalid input path: {input_path}")
+        raise ValueError(f"Invalid input path: {input_path}")
     
   
 if __name__ == "__main__":
