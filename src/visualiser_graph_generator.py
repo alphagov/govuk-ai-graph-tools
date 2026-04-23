@@ -154,35 +154,28 @@ async def generate_graph(input_data: Union[str, Dict[str, Any]], output_path: Op
     if output_path:
         with fsspec.open(output_path, "w", auto_mkdir=True) as f:
             json.dump(cy_json, f, indent=4)
-        logger.info(f"Graph saved to {summarize_path(output_path)}")
+        logger.info(f"Graph saved to {output_path}")
     
     return cy_json
 
-def summarize_path(path: str) -> str:
-    """Extracts a concise representation (project/run) of a path for logging."""
-    match = re.search(r'([^/]+)/(run-\d+-\d+)', path)
-    if match:
-        return f"{match.group(1)}/{match.group(2)}"
-    return path.split('/')[-1]
 
-def generate_output_path(input_path: str) -> str:
+
+def generate_output_path(source_path: str) -> str:
     """Generates the output path for the graph JSON file."""
     
     #TODO: make input from user be relative without the bucketname applied
-    match = re.search(r'(?P<base>s3://govuk-ai-accelerator-data-integration/)?(?P<domain_name>[^/]+)/(?P<run>run-\d+-\d+)', input_path)
-    
+    match = re.search(r'(?P<domain_name>[^/]+)/(?P<run>run-\d+-\d+)', source_path)
+    s3_bucket_uri = 's3://govuk-ai-accelerator-data-integration'
     if match:
-        base = match.group('base')
         domain_name = match.group('domain_name')
         run_id = match.group('run')
-        
-        if base:
-            return f"{base}graph_tools/{domain_name}/{run_id}/graphNode.json"
-        else:
-            raise ValueError(f"Input path '{input_path}' does not contain a recognizable S3 path structure.")
+        output_path =f"{s3_bucket_uri}/graph_tools/{domain_name}/{run_id}/graphNode.json"
+        input_path= f"{s3_bucket_uri}/{source_path}"
+        return input_path, output_path
+    else:
+        logger.error(f"Invalid input path: {input_path}")
+        raise ValueError(f"Invalid input path: {input_path}")
     
-    summary = summarize_path(input_path)
-    raise ValueError(f"Input path '{summary}' does not contain a recognizable project/run structure.")
-
+  
 if __name__ == "__main__":
     asyncio.run(generate_graph("graph.json", "outputs/graphNode.json"))
