@@ -1,10 +1,16 @@
 import os
 import logging
+import asyncio
+import uuid
+import json
+import time
 from flask import Flask, request, jsonify, render_template
 from dotenv import load_dotenv
 from src.visualiser_graph_generator import generate_graph, generate_output_path
 from src.visualiser_graph_loader import load_graph
 import fsspec
+from asgiref.wsgi import WsgiToAsgi
+from src.utils import update_job_status, read_job_status
 
 
 load_dotenv()
@@ -55,31 +61,64 @@ def create_app():
                 return jsonify({"error": "Missing 'source_path' query parameter"}), 400
 
             input_path, output_path = generate_output_path(source_path)
-            logger.info(f'Starting graph generation process for {input_path}...')
-            #TODO: change this to non-blocking
-            await generate_graph(input_path, output_path) 
-            logger.info('Graph generation completed successfully.')
-            # temp logic to validate the output exists in s3
-            fs = fsspec.filesystem('s3')
-            if fs.exists(output_path):
-                return jsonify({'status': 'success'}), 200
-            else:
-                return jsonify({'status': 'failed'}), 500
+            job_id = str(uuid.uuid4())
+            
+            initial_status = {
+                "job_id": job_id,
+                "status": "pending",
+                "source_path": source_path,
+                "created_at": time.time()
+            }
+            update_job_status(job_id, initial_status)
+
+            async def run_extraction():
+                try:
+                    logger.info(f'Starting background graph generation for {input_path} (Job: {job_id})...')
+                    initial_status["status"] = "running"
+                    update_job_status(job_id, initial_status)
+                    
+                    await generate_graph(input_path, output_path)
+                    
+                    initial_status["status"] = "completed"
+                    initial_status["output_path"] = output_path
+                    initial_status["completed_at"] = time.time()
+                    update_job_status(job_id, initial_status)
+                    logger.info(f'Graph generation completed successfully for {output_path}')
+                except Exception as e:
+                    logger.error(f"Background graph generation failed for job {job_id}: {str(e)}")
+                    initial_status["status"] = "failed"
+                    initial_status["error"] = str(e)
+                    update_job_status(job_id, initial_status)
+
+            asyncio.create_task(run_extraction())
+
+            return jsonify({
+                'job_id': job_id,
+                'status': 'accepted',
+                'message': f'Graph generation started in background for {source_path}',
+                'output_path': output_path
+            }), 202
 
         except Exception as e:
-            app.logger.error(f"Error generating graph: {str(e)}")
+            app.logger.error(f"Error starting background task: {str(e)}")
             return jsonify({"error": str(e)}), 500
-            
+
+    @app.route('/status/<job_id>', methods=['GET'])
+    def get_status(job_id):
+        """Check the status of a background job from S3."""
+        status_info = read_job_status(job_id)
+        if not status_info:
+            return jsonify({"error": "Job ID not found"}), 404
+        return jsonify(status_info), 200
+
     return app
 
+def create_asgi_app():
+    return WsgiToAsgi(create_app())
+
 if __name__ == "__main__":
-    app = create_app()
-    try:
-        from waitress import serve
-        port = int(os.getenv("PORT", 3000))
-        logger.info(f"Starting Waitress server on port {port}...")
-        serve(app, host='0.0.0.0', port=port)
-    except ImportError:
-        port = int(os.getenv("PORT", 3000))
-        logger.warning("Waitress not found, falling back to Flask development server.")
-        app.run(host='0.0.0.0', port=port)
+    asgi_app = create_asgi_app()
+    import uvicorn
+    port = int(os.getenv("PORT", 3000))
+    logger.info(f"Starting Uvicorn server on port {port}...")
+    uvicorn.run(asgi_app, host='0.0.0.0', port=port)

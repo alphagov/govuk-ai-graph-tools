@@ -28,5 +28,5 @@ ENV PORT=3000
 # Expose the port
 EXPOSE 3000
 
-# Use waitress-serve to serve the Flask app
-CMD ["waitress-serve", "--host=0.0.0.0", "--port=3000", "--call", "app:create_app"]
+# Use uvicorn to serve the Flask app with async support
+CMD ["uvicorn", "app:create_asgi_app", "--factory", "--host", "0.0.0.0", "--port", "3000"]
