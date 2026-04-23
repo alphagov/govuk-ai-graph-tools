@@ -37,10 +37,10 @@ uv add -r requirements.txt
 uv run app.py
 ```
 
-**Production mode (Waitress WSGI server):**
+**Production mode (Uvicorn ASGI server):**
 
 ```bash
-uv run waitress-serve --port 3000 --call 'app:create_app'
+uv run uvicorn 'app:create_asgi_app' --factory --port 3000
 ```
 
 The app runs on **http://localhost:3000**.
