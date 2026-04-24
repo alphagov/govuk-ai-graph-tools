@@ -2,7 +2,25 @@
 IMAGE_NAME = extractor-agent
 PORT = 3000
 
-.PHONY: build run stop clean test start shell logs
+.PHONY: build run stop clean test start shell logs lint format lint-fix typecheck install-hooks
+
+# Pre-commit hooks
+install-hooks:
+	uv run pre-commit install
+
+# Linting and Formatting
+lint:
+	uv run ruff check .
+
+format:
+	uv run ruff format .
+
+lint-fix:
+	uv run ruff check --fix .
+	uv run ruff format .
+
+typecheck:
+	uv run mypy .
 
 # Build and run the container
 start: build run

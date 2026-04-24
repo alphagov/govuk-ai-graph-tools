@@ -1,56 +1,75 @@
-import os
-import boto3
 import json
-from typing import List, Dict, Optional, Any
+import os
 from dataclasses import dataclass, field
 from pprint import pprint
-from pydantic import BaseModel, Field, RootModel
+from typing import Dict, List, Optional
+
+import boto3
+from pydantic import BaseModel, Field
 from pydantic_ai import Agent
 from pydantic_ai.models.bedrock import BedrockConverseModel
 from pydantic_ai.providers.bedrock import BedrockProvider
 
+
 # --- Shared Models ---
+
 
 class AgentQuote(BaseModel):
     """Simple quote model for the agent to return."""
+
     content: str = Field(description="The exact sentence or phrase found in the document.")
     keyword_matched: str = Field(description="The keyword or phrase that triggered this match.")
 
+
 class AgentQuoteExtraction(BaseModel):
     """Collection of quotes returned by the agent for a single document."""
+
     quotes: List[AgentQuote]
+
 
 class Finding(BaseModel):
     """A single unique finding within a keyword group."""
+
     content: str
     source_documents: List[str]
 
-class FinalQuoteExtraction(BaseModel): # Changed to BaseModel as RootModel is often unnecessary for simple dict roots
+
+class FinalQuoteExtraction(
+    BaseModel
+):  # Changed to BaseModel as RootModel is often unnecessary for simple dict roots
     """The final collection of quotes as a dictionary of keyword -> list of findings."""
+
     root: Dict[str, List[Finding]]
 
+
 # --- Shared Configuration ---
+
 
 @dataclass
 class BaseExtractorConfig:
     keywords: List[str]
     s3_documents: List[str]
     model_id: str = "eu.anthropic.claude-sonnet-4-6"
-    region: str = field(default_factory=lambda: os.getenv("AWS_REGION", os.getenv("AWS_DEFAULT_REGION", "eu-west-2")))
+    region: str = field(
+        default_factory=lambda: os.getenv(
+            "AWS_REGION", os.getenv("AWS_DEFAULT_REGION", "eu-west-2")
+        )
+    )
     chunk_max_chars: int = 6000
     secret_id: Optional[str] = None
 
+
 # --- Base Extractor Class ---
+
 
 class BaseQuoteExtractor:
     def __init__(self, config: BaseExtractorConfig):
         self.config = config
         self.s3_client = boto3.client("s3", region_name=self.config.region)
-        
+
         # Initialize Bedrock Agent
         model = BedrockConverseModel(
-            self.config.model_id, 
-            provider=BedrockProvider(region_name=self.config.region)
+            self.config.model_id, provider=BedrockProvider(region_name=self.config.region)
         )
         self.agent = Agent(
             model,
@@ -62,16 +81,18 @@ class BaseQuoteExtractor:
                 "For each match, return:\n"
                 "1. the EXACT sentence as 'content' (do not paraphrase)\n"
                 "2. the keyword that was matched as 'keyword_matched'\n\n"
-                "If a keyword appears multiple times in different sentences, extract each unique sentence. "
+                "If a keyword appears multiple times in different sentences, "
+                "extract each unique sentence. "
                 "If no matches are found, return an empty list of quotes.\n"
-               """IMPORTANT: The source is a Markdown file. You MUST return 'content' that matches the RENDERED text, not the raw source. "
-                Apply these cleaning rules to every extracted quote:
-                - Remove Markdown link syntax: change [link text](url) to just link text.
-                - Strip formatting: remove all **, *, __, _, and ` symbols.
-                - Strip list markers: remove leading '* ', '- ', '+ ', or '1. ' types of bullet points.
-                - Strip headers: remove leading '#' symbols."""
-                
-            )
+                "IMPORTANT: The source is a Markdown file. You MUST return 'content' that "
+                "matches the RENDERED text, not the raw source. "
+                "Apply these cleaning rules to every extracted quote:\n"
+                "- Remove Markdown link syntax: change [link text](url) to just link text.\n"
+                "- Strip formatting: remove all **, *, __, _, and ` symbols.\n"
+                "- Strip list markers: remove leading '* ', '- ', '+ ', or '1. ' "
+                "types of bullet points.\n"
+                "- Strip headers: remove leading '#' symbols."
+            ),
         )
 
     def get_aws_secret(self, secret_id: str) -> dict:
@@ -92,7 +113,7 @@ class BaseQuoteExtractor:
         try:
             if not s3_uri.startswith("s3://"):
                 raise ValueError(f"Invalid S3 URI: {s3_uri}")
-            
+
             parts = s3_uri.replace("s3://", "").split("/", 1)
             bucket, key = parts
             response = self.s3_client.get_object(Bucket=bucket, Key=key)
@@ -105,11 +126,12 @@ class BaseQuoteExtractor:
         """Splits text into chunks respecting paragraph boundaries."""
         if not text:
             return []
-        
+
         paragraphs = text.split("\n\n")
-        chunks, current_chunk = [], []
+        chunks: List[str] = []
+        current_chunk: List[str] = []
         current_length = 0
-        
+
         for para in paragraphs:
             para_len = len(para)
             if current_length + para_len > self.config.chunk_max_chars and current_chunk:
@@ -117,8 +139,8 @@ class BaseQuoteExtractor:
                 current_chunk, current_length = [para], para_len
             else:
                 current_chunk.append(para)
-                current_length += para_len + 2 # +2 for \n\n separators
-                
+                current_length += para_len + 2  # +2 for \n\n separators
+
         if current_chunk:
             chunks.append("\n\n".join(current_chunk))
         return chunks

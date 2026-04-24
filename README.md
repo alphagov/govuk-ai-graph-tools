@@ -61,6 +61,35 @@ docker run -p 3000:3000 -t govuk-ai-graph-tools-app
 ---
 
 
+---
+
+## Development and Code Quality
+
+### 1. Manual Checks
+You can run the full suite of checks using the `Makefile`:
+
+```bash
+# Run all checks
+make lint && make format && make typecheck
+
+# Run individual checks
+make lint
+make format
+make typecheck
+```
+
+### 2. Pre-commit Hooks
+The project is configured with `pre-commit` to automatically run these checks before every `git commit`. 
+
+To install the hooks in your local repository:
+```bash
+make install-hooks
+```
+
+Once installed, your code will be automatically linted and type-checked whenever you commit. If you need to skip the hooks (e.g., for an urgent WIP commit), you can use `git commit --no-verify`.
+
+---
+
 ## Tests
 
 ```bash
