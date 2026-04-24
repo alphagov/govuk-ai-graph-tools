@@ -48,6 +48,15 @@ def create_app():
 
         return render_template('graph.html', source_path=source_path_param or '')
 
+    @app.route('/visualisations', methods=['GET'])
+    def visualisations_page():
+        """Serve a page listing all available visualisations."""
+        visualisations = [
+            {"source_path": "test-visa-5/run-20260420-2"},
+            {"source_path": "fake-domain/run-7891-2"}
+        ]
+        return render_template('visualisations.html', visualisations=visualisations)
+
     @app.route('/graph-viewmodel', methods=['GET'])
     async def graph_viewmodel():
         """Serve the graph data as JSON for the frontend."""
