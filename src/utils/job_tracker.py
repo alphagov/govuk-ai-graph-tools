@@ -26,7 +26,7 @@ def update_job_status(job_id: str, status_data: dict):
     except Exception as e:
         logger.error(f"Failed to update job status in S3 for job {job_id}: {str(e)}")
 
-def read_job_status(job_id: str) -> dict:
+def read_job_status(job_id: str) -> dict| None:
     """Reads the job status from S3."""
     path = get_status_path(job_id)
     fs = fsspec.filesystem("s3")
@@ -65,25 +65,25 @@ def get_active_job_status(job_id: str, timeout_hours: int = 24) -> Optional[dict
             
     return None
 
-async def background_run_extraction(job_id: str, input_path: str, output_path: str, initial_status: dict):
+async def background_run_extraction(job_id: str, input_path: str, output_path: str, status: dict):
     """Background task for graph generation and status tracking."""
     try:
         logger.info(f'Starting background graph generation for {input_path} (Job: {job_id})...')
-        initial_status["status"] = "running"
-        update_job_status(job_id, initial_status)
+        status["status"] = "running"
+        update_job_status(job_id, status)
         
         await generate_graph(input_path, output_path)
         
-        initial_status["status"] = "completed"
-        initial_status["output_path"] = output_path
-        initial_status["completed_at"] = time.time()
-        update_job_status(job_id, initial_status)
+        status["status"] = "completed"
+        status["output_path"] = output_path
+        status["completed_at"] = time.time()
+        update_job_status(job_id, status)
         logger.info(f'Graph generation completed successfully for {output_path}')
     except Exception as e:
         logger.error(f"Background graph generation failed for job {job_id}: {str(e)}")
-        initial_status["status"] = "failed"
-        initial_status["error"] = str(e)
-        update_job_status(job_id, initial_status)
+        status["status"] = "failed"
+        status["error"] = str(e)
+        update_job_status(job_id, status)
 
 async def resume_interrupted_jobs():
     """Scans for jobs stuck in 'running' state and restarts them if they are fresh (<24h)."""
