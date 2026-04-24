@@ -1,5 +1,4 @@
 import asyncio
-import fsspec
 import json
 import logging
 import os
@@ -10,7 +9,7 @@ from asgiref.wsgi import WsgiToAsgi
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify, render_template
 from src.visualiser_graph_generator import generate_graph, generate_output_path
-from src.visualiser_graph_loader import load_json_file, extract_path_parts, visualiser_graph_file_path
+from src.visualiser_graph_loader import extract_path_parts, available_visualisations, load_json_file, visualiser_graph_file_path
 from src.utils import (
     update_job_status, 
     read_job_status, 
@@ -24,7 +23,6 @@ from werkzeug.exceptions import BadRequest
 
 load_dotenv()
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -51,11 +49,7 @@ def create_app():
     @app.route('/visualisations', methods=['GET'])
     def visualisations_page():
         """Serve a page listing all available visualisations."""
-        visualisations = [
-            {"source_path": "test-visa-5/run-20260420-2"},
-            {"source_path": "fake-domain/run-7891-2"}
-        ]
-        return render_template('visualisations.html', visualisations=visualisations)
+        return render_template('visualisations.html', visualisations=available_visualisations())
 
     @app.route('/graph-viewmodel', methods=['GET'])
     async def graph_viewmodel():
