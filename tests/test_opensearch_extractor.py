@@ -21,7 +21,7 @@ async def test_opensearch_extractor_full_flow(mock_config):
     # Mock OpenSearch client, Bedrock Agent, and boto3 Session
     with (
         patch("src.content_extractor.opensearch.OpenSearch") as mock_os_class,
-        patch("src.content_extractor.opensearch.boto3.Session") as mock_session_class,
+        patch("src.content_extractor.base.boto3.Session") as mock_session_class,
         patch("src.content_extractor.opensearch.helpers.bulk") as mock_bulk,
         patch("src.content_extractor.base.BedrockConverseModel"),
         patch("src.content_extractor.base.Agent") as mock_agent_class,
