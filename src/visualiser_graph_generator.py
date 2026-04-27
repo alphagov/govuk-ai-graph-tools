@@ -82,13 +82,8 @@ async def fetch_extraction_findings(
         )
         extractor = OpenSearchQuoteExtractor(config)
 
-        # We want the raw findings (list of dicts) rather than the consolidated object
-        # for compatibility with map_findings_to_entities
         logger.info(f"Starting OpenSearch extraction (indexing={perform_indexing})...")
 
-        # We'll call index_documents directly if needed, then we need a way to get raw findings.
-        # Let's modify OpenSearchQuoteExtractor.run to optionally return raw findings
-        # or just implement the flow here.
         if perform_indexing:
             await extractor.index_documents()
 
@@ -160,7 +155,6 @@ def build_node_structure(entities: List[Entity], entity_results: Dict[str, Any])
         human_label = ent.label or ent_id.replace("_", " ").title()
         nodes.append(Node(data=NodeData(id=ent_id, label=human_label, type="entity")))
 
-        # Use a dict to accumulate alias nodes by their slugified ID to avoid duplicates
         alias_map = {}
 
         for alias_obj in ent.aliases:
@@ -179,7 +173,6 @@ def build_node_structure(entities: List[Entity], entity_results: Dict[str, Any])
 
         # Add the deduplicated alias nodes and their edges
         for alias_id, node_data in alias_map.items():
-            # If no occurrences, clear the list (Pydantic will handle Optional)
             if not node_data.occurrences:
                 node_data.occurrences = None
 
@@ -245,7 +238,6 @@ async def generate_graph(
 def generate_output_path(source_path: str) -> Tuple[str, str]:
     """Generates the output path for the graph JSON file."""
 
-    # TODO: make input from user be relative without the bucketname applied
     match = re.search(r"(?P<domain_name>[^/]+)/(?P<run>run-\d+-\d+)", source_path)
     s3_bucket_uri = "s3://govuk-ai-accelerator-data-integration"
     if match:

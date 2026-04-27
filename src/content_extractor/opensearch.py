@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 import logging
 from collections import defaultdict
 from dataclasses import dataclass
@@ -137,7 +138,6 @@ class OpenSearchQuoteExtractor(BaseQuoteExtractor):
         Fetches documents from S3, chunks them, and uploads to OpenSearch.
         Uses deterministic IDs based on content hash to avoid duplicates.
         """
-        import hashlib
 
         if not self.config.s3_documents:
             logger.warning("No S3 documents specified for indexing.")
@@ -152,7 +152,6 @@ class OpenSearchQuoteExtractor(BaseQuoteExtractor):
 
             chunks = self.chunk_content(content)
             for chunk in chunks:
-                # Create a deterministic ID based on the S3 URI and chunk content
                 id_string = f"{s3_uri}:{chunk}"
                 chunk_id = hashlib.sha256(id_string.encode("utf-8")).hexdigest()
 
