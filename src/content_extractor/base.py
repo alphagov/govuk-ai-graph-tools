@@ -57,6 +57,10 @@ class BaseExtractorConfig:
     )
     chunk_max_chars: int = 6000
     secret_id: Optional[str] = None
+    aws_profile: Optional[str] = None
+    aws_access_key_id: Optional[str] = None
+    aws_secret_access_key: Optional[str] = None
+    aws_session_token: Optional[str] = None
 
 
 # --- Base Extractor Class ---
@@ -65,11 +69,23 @@ class BaseExtractorConfig:
 class BaseQuoteExtractor:
     def __init__(self, config: BaseExtractorConfig):
         self.config = config
-        self.s3_client = boto3.client("s3", region_name=self.config.region)
+
+        # Initialize AWS Session
+        self.session = boto3.Session(
+            profile_name=self.config.aws_profile,
+            aws_access_key_id=self.config.aws_access_key_id,
+            aws_secret_access_key=self.config.aws_secret_access_key,
+            aws_session_token=self.config.aws_session_token,
+            region_name=self.config.region,
+        )
+
+        self.s3_client = self.session.client("s3")
+        self.url_map: Dict[str, str] = {}
 
         # Initialize Bedrock Agent
+        bedrock_client = self.session.client("bedrock-runtime")
         model = BedrockConverseModel(
-            self.config.model_id, provider=BedrockProvider(region_name=self.config.region)
+            self.config.model_id, provider=BedrockProvider(bedrock_client=bedrock_client)
         )
         self.agent = Agent(
             model,
@@ -95,9 +111,43 @@ class BaseQuoteExtractor:
             ),
         )
 
+    def _fetch_url_map(self, s3_uris: List[str]):
+        """
+        Attempts to fetch sources.json files from the directories of the input files.
+        Deduplicates potential sources.json locations and merges their mappings.
+        """
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        if not s3_uris:
+            return
+
+        sources_locations = set()
+        for uri in s3_uris:
+            if uri in self.url_map:
+                continue
+
+            if "/input/" in uri:
+                sources_uri = uri.split("/input/")[0] + "/input/sources.json"
+            else:
+                sources_uri = "/".join(uri.split("/")[:-1]) + "/sources.json"
+            sources_locations.add(sources_uri)
+
+        for sources_uri in sources_locations:
+            logger.info(f"Attempting to fetch sources map from {sources_uri}...")
+            content: Optional[str] = self.fetch_s3_content(sources_uri)
+            if content:
+                try:
+                    new_map = json.loads(content)
+                    self.url_map.update(new_map)
+                    logger.info(f"Successfully loaded {len(new_map)} mappings from {sources_uri}.")
+                except Exception as e:
+                    logger.error(f"Failed to parse {sources_uri}: {e}")
+
     def get_aws_secret(self, secret_id: str) -> dict:
         """Fetches and parses a JSON secret from AWS Secrets Manager."""
-        client = boto3.client("secretsmanager", region_name=self.config.region)
+        client = self.session.client("secretsmanager")
         try:
             response = client.get_secret_value(SecretId=secret_id)
             if "SecretString" in response:
