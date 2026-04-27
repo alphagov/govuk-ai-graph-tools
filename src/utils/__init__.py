@@ -5,6 +5,7 @@ from .job_tracker import (
     get_status_path,
     read_job_status,
     resume_interrupted_jobs,
+    start_extraction_job,
     update_job_status,
 )
 
@@ -16,5 +17,6 @@ __all__ = [
     "get_status_path",
     "read_job_status",
     "resume_interrupted_jobs",
+    "start_extraction_job",
     "update_job_status",
 ]

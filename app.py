@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import os
-import time
 
 from asgiref.wsgi import WsgiToAsgi
 from dotenv import load_dotenv
@@ -9,14 +8,10 @@ from flask import Flask, jsonify, render_template, request
 from werkzeug.exceptions import BadRequest
 
 from src.utils import (
-    background_run_extraction,
-    get_active_job_status,
-    get_job_id_for_path,
     read_job_status,
     resume_interrupted_jobs,
-    update_job_status,
+    start_extraction_job,
 )
-from src.visualiser_graph_generator import generate_output_path
 from src.visualiser_graph_loader import (
     extract_path_parts,
     load_json_file,
@@ -75,54 +70,21 @@ def create_app():
         """
         Endpoint that runs the Cytoscape graph generation logic based on graph.json.
         """
-        try:
-            source_path = request.args.get("source_path")
-            if not source_path:
-                return jsonify({"error": "Missing 'source_path' query parameter"}), 400
+        source_path = request.args.get("source_path") or ""
+        data, status_code = await start_extraction_job(source_path, extractor_type="s3")
+        return jsonify(data), status_code
 
-            input_path, output_path = generate_output_path(source_path)
-            job_id = get_job_id_for_path(source_path)
-
-            active_status = get_active_job_status(job_id)
-            if active_status:
-                logger.info(
-                    f"Duplicate request for {source_path}. Job {job_id} is already in progress."
-                )
-                return jsonify(
-                    {
-                        "job_id": job_id,
-                        "status": "already_running",
-                        "message": (
-                            f"A graph generation job is already in progress for {source_path}"
-                        ),
-                        "output_path": output_path,
-                    }
-                ), 202
-
-            initial_status = {
-                "job_id": job_id,
-                "status": "pending",
-                "source_path": source_path,
-                "created_at": time.time(),
-            }
-            update_job_status(job_id, initial_status)
-
-            asyncio.create_task(
-                background_run_extraction(job_id, input_path, output_path, initial_status)
-            )
-
-            return jsonify(
-                {
-                    "job_id": job_id,
-                    "status": "accepted",
-                    "message": f"Graph generation started in background for {source_path}",
-                    "output_path": output_path,
-                }
-            ), 202
-
-        except Exception as e:
-            app.logger.error(f"Error starting background task: {str(e)}")
-            return jsonify({"error": str(e)}), 500
+    @app.route("/extract-os", methods=["GET"])
+    async def extract_quotes_os():
+        """
+        Endpoint that runs the extraction using OpenSearch.
+        """
+        source_path = request.args.get("source_path") or ""
+        perform_indexing = request.args.get("index", "false").lower() == "true"
+        data, status_code = await start_extraction_job(
+            source_path, extractor_type="opensearch", perform_indexing=perform_indexing
+        )
+        return jsonify(data), status_code
 
     @app.route("/status/<job_id>", methods=["GET"])
     def get_status(job_id):

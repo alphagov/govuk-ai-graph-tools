@@ -74,14 +74,30 @@ def get_active_job_status(job_id: str, timeout_hours: int = 24) -> Optional[dict
     return None
 
 
-async def background_run_extraction(job_id: str, input_path: str, output_path: str, status: dict):
+async def background_run_extraction(
+    job_id: str,
+    input_path: str,
+    output_path: str,
+    status: dict,
+    extractor_type: str = "s3",
+    perform_indexing: bool = False,
+):
     """Background task for graph generation and status tracking."""
     try:
-        logger.info(f"Starting background graph generation for {input_path} (Job: {job_id})...")
+        logger.info(
+            f"Starting graph generation for {input_path} (Job: {job_id}, Type: {extractor_type})..."
+        )
         status["status"] = "running"
+        status["extractor_type"] = extractor_type
+        status["perform_indexing"] = perform_indexing
         update_job_status(job_id, status)
 
-        await generate_graph(input_path, output_path)
+        await generate_graph(
+            input_path,
+            output_path,
+            extractor_type=extractor_type,
+            perform_indexing=perform_indexing,
+        )
 
         status["status"] = "completed"
         status["output_path"] = output_path
@@ -118,8 +134,17 @@ async def resume_interrupted_jobs():
                         try:
                             input_path, output_path = generate_output_path(source_path)
                             logger.info(f"Resuming interrupted job {job_id} for {source_path}")
+                            extractor_type = status.get("extractor_type", "s3")
+                            perform_indexing = status.get("perform_indexing", False)
                             asyncio.create_task(
-                                background_run_extraction(job_id, input_path, output_path, status)
+                                background_run_extraction(
+                                    job_id,
+                                    input_path,
+                                    output_path,
+                                    status,
+                                    extractor_type=extractor_type,
+                                    perform_indexing=perform_indexing,
+                                )
                             )
                         except Exception as e:
                             logger.error(f"Failed to prepare resumption for job {job_id}: {str(e)}")
@@ -127,3 +152,65 @@ async def resume_interrupted_jobs():
                     logger.info(f"Skipping stale interrupted job {job_id} (over 24h old)")
     except Exception as e:
         logger.error(f"Error during job resumption scan: {str(e)}")
+
+
+async def start_extraction_job(
+    source_path: str, extractor_type: str = "s3", perform_indexing: bool = False
+) -> tuple[dict, int]:
+    """
+    Central logic for starting an extraction job.
+    Returns a tuple of (response_data, status_code).
+    """
+    if not source_path:
+        return {"error": "Missing 'source_path' query parameter"}, 400
+
+    try:
+        input_path, output_path = generate_output_path(source_path)
+
+        # Use a distinct job ID for OpenSearch to avoid collisions with S3 sequential jobs
+        path_for_id = source_path + "_os" if extractor_type == "opensearch" else source_path
+        job_id = get_job_id_for_path(path_for_id)
+
+        active_status = get_active_job_status(job_id)
+        if active_status:
+            logger.info(
+                f"Duplicate request for {source_path}. Job {job_id} is already in progress."
+            )
+            return {
+                "job_id": job_id,
+                "status": "already_running",
+                "message": f"{extractor_type.upper()} job {job_id} is already in progress.",
+                "output_path": output_path,
+            }, 202
+
+        initial_status = {
+            "job_id": job_id,
+            "status": "pending",
+            "source_path": source_path,
+            "created_at": time.time(),
+            "extractor_type": extractor_type,
+            "perform_indexing": perform_indexing,
+        }
+        update_job_status(job_id, initial_status)
+
+        asyncio.create_task(
+            background_run_extraction(
+                job_id,
+                input_path,
+                output_path,
+                initial_status,
+                extractor_type=extractor_type,
+                perform_indexing=perform_indexing,
+            )
+        )
+
+        return {
+            "job_id": job_id,
+            "status": "accepted",
+            "message": f"{extractor_type.upper()} graph generation started for {source_path}",
+            "output_path": output_path,
+        }, 202
+
+    except Exception as e:
+        logger.error(f"Error starting {extractor_type} background task: {str(e)}")
+        return {"error": str(e)}, 500

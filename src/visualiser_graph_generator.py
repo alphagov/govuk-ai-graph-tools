@@ -9,6 +9,7 @@ import fsspec
 
 from src.content_extractor.base import BaseExtractorConfig
 from src.content_extractor.highlighter import highlight_occurrence
+from src.content_extractor.opensearch import OpenSearchConfig, OpenSearchQuoteExtractor
 from src.content_extractor.s3_sequential import S3QuoteExtractor
 from src.models.graph_models import (
     Edge,
@@ -49,10 +50,13 @@ def build_registries(entities: List[Entity]) -> Dict[str, Any]:
     return registry
 
 
-async def fetch_extraction_findings(registry: Dict[str, Any]) -> List[Dict[str, Any]]:
-    """Runs the extractor over unique S3 documents."""
-    config = BaseExtractorConfig(keywords=[], s3_documents=[])
-    extractor = S3QuoteExtractor(config)
+async def fetch_extraction_findings(
+    registry: Dict[str, Any],
+    extractor_type: str = "s3",
+    perform_indexing: bool = False,
+) -> List[Dict[str, Any]]:
+    """Runs the extractor over unique S3 documents using the specified strategy."""
+    import os
 
     doc_to_keywords: Dict[str, List[str]] = {
         uri: list(data["keywords"]) for uri, data in registry.items() if data["keywords"]
@@ -62,8 +66,66 @@ async def fetch_extraction_findings(registry: Dict[str, Any]) -> List[Dict[str, 
         logger.warning("No documents or aliases found to extract.")
         return []
 
-    logger.info(f"Starting extraction for {len(doc_to_keywords)} documents...")
-    return await extractor.run_mapping(doc_to_keywords)
+    if extractor_type == "opensearch":
+        # Union of all keywords across all documents for the search query
+        all_keywords = set()
+        for keywords in doc_to_keywords.values():
+            all_keywords.update(keywords)
+
+        config = OpenSearchConfig(
+            keywords=sorted(list(all_keywords)),
+            s3_documents=list(doc_to_keywords.keys()),
+            endpoint=os.getenv("OPENSEARCH_ENDPOINT", "localhost"),
+            port=int(os.getenv("OPENSEARCH_PORT", "4443")),
+            index_name=os.getenv("OPENSEARCH_INDEX", "document_chunks"),
+            secret_id=os.getenv("OPENSEARCH_SECRET_ID"),
+        )
+        extractor = OpenSearchQuoteExtractor(config)
+
+        # We want the raw findings (list of dicts) rather than the consolidated object
+        # for compatibility with map_findings_to_entities
+        logger.info(f"Starting OpenSearch extraction (indexing={perform_indexing})...")
+
+        # We'll call index_documents directly if needed, then we need a way to get raw findings.
+        # Let's modify OpenSearchQuoteExtractor.run to optionally return raw findings
+        # or just implement the flow here.
+        if perform_indexing:
+            await extractor.index_documents()
+
+        hits = await extractor._search_chunks(config.keywords)
+        if not hits:
+            return []
+
+        # Load URL map for link generation
+        s3_uris = []
+        for hit in hits:
+            metadata = hit["_source"].get(config.metadata_field, {})
+            s3_uri = metadata.get(config.s3_uri_field)
+            if s3_uri:
+                s3_uris.append(s3_uri)
+        extractor._fetch_url_map(s3_uris)
+
+        raw_findings: List[Dict[str, Any]] = []
+        tasks = []
+        for hit in hits:
+            source = hit["_source"]
+            chunk_text = source.get(config.text_field, "")
+            metadata = source.get(config.metadata_field, {})
+            s3_uri = metadata.get(config.s3_uri_field, "unknown")
+            if chunk_text:
+                tasks.append(
+                    extractor.process_chunk(chunk_text, s3_uri, config.keywords, raw_findings)
+                )
+
+        if tasks:
+            await asyncio.gather(*tasks)
+
+        return raw_findings
+    else:
+        s3_config = BaseExtractorConfig(keywords=[], s3_documents=[])
+        s3_extractor = S3QuoteExtractor(s3_config)
+        logger.info(f"Starting S3 sequential extraction for {len(doc_to_keywords)} documents...")
+        return await s3_extractor.run_mapping(doc_to_keywords)
 
 
 def map_findings_to_entities(
@@ -137,7 +199,12 @@ def build_node_structure(entities: List[Entity], entity_results: Dict[str, Any])
     return GraphOutput(nodes=nodes, edges=edges)
 
 
-async def generate_graph(input_data: Union[str, Dict[str, Any]], output_path: Optional[str] = None):
+async def generate_graph(
+    input_data: Union[str, Dict[str, Any]],
+    output_path: Optional[str] = None,
+    extractor_type: str = "s3",
+    perform_indexing: bool = False,
+):
     """Main orchestration function. Can take a file path (str) or a dictionary."""
     if isinstance(input_data, str):
         try:
@@ -159,7 +226,9 @@ async def generate_graph(input_data: Union[str, Dict[str, Any]], output_path: Op
 
     registry = build_registries(entities)
 
-    raw_findings = await fetch_extraction_findings(registry)
+    raw_findings = await fetch_extraction_findings(
+        registry, extractor_type=extractor_type, perform_indexing=perform_indexing
+    )
     entity_results = map_findings_to_entities(raw_findings, registry)
 
     cy_graph = build_node_structure(entities, entity_results)
