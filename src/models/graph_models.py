@@ -20,8 +20,15 @@ class Entity(BaseModel):
     model_config = ConfigDict(extra="allow")
 
 
+class Relationship(BaseModel):
+    type: str
+
+    model_config = ConfigDict(extra="allow")
+
+
 class GraphInput(BaseModel):
     entities: List[Entity]
+    relationships: List[Relationship] = Field(default_factory=list)
 
     model_config = ConfigDict(extra="allow")
 
@@ -55,3 +62,4 @@ class Edge(BaseModel):
 class GraphOutput(BaseModel):
     nodes: List[Node]
     edges: List[Edge]
+    relationships: List[Relationship] = Field(default_factory=list)

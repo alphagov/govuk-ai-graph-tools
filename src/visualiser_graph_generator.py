@@ -20,6 +20,7 @@ from src.models.graph_models import (
     Node,
     NodeData,
     Occurrence,
+    Relationship,
 )
 
 
@@ -146,7 +147,11 @@ def map_findings_to_entities(
     return results
 
 
-def build_node_structure(entities: List[Entity], entity_results: Dict[str, Any]) -> GraphOutput:
+def build_node_structure(
+    entities: List[Entity],
+    entity_results: Dict[str, Any],
+    relationships: Optional[List[Relationship]] = None,
+) -> GraphOutput:
     """Constructs the final list of nodes and edges."""
     nodes, edges = [], []
 
@@ -189,7 +194,7 @@ def build_node_structure(entities: List[Entity], entity_results: Dict[str, Any])
                 )
             )
 
-    return GraphOutput(nodes=nodes, edges=edges)
+    return GraphOutput(nodes=nodes, edges=edges, relationships=relationships or [])
 
 
 async def generate_graph(
@@ -224,7 +229,7 @@ async def generate_graph(
     )
     entity_results = map_findings_to_entities(raw_findings, registry)
 
-    cy_graph = build_node_structure(entities, entity_results)
+    cy_graph = build_node_structure(entities, entity_results, validated_input.relationships)
     cy_json = cy_graph.model_dump(exclude_none=True)
 
     if output_path:
