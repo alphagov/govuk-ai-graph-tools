@@ -8,7 +8,7 @@ from flask import Flask, jsonify, render_template, request
 from werkzeug.exceptions import BadRequest
 
 from src.utils import (
-    read_job_status,
+    read_job_status_metadata,
     resume_interrupted_jobs,
     start_extraction_job,
 )
@@ -94,7 +94,7 @@ def create_app():
     @app.route("/status/<job_id>", methods=["GET"])
     def get_status(job_id):
         """Check the status of a background job from S3."""
-        status_info = read_job_status(job_id)
+        status_info = read_job_status_metadata(job_id)
         if not status_info:
             return jsonify({"error": "Job ID not found"}), 404
         return jsonify(status_info), 200
