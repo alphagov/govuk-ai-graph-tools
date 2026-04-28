@@ -3,10 +3,9 @@ import hashlib
 import logging
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List, Optional, Set
 
 from opensearchpy import OpenSearch, RequestsHttpConnection, helpers
-from requests_aws4auth import AWS4Auth
 
 from src.url.generator import generate_url_fragement, s3_to_govuk_url
 
@@ -34,6 +33,8 @@ class OpenSearchConfig(BaseExtractorConfig):
     text_field: str = "text"
     metadata_field: str = "metadata"
     s3_uri_field: str = "s3_uri"
+    opensearch_user: Optional[str] = None
+    opensearch_password: Optional[str] = None
 
 
 class OpenSearchQuoteExtractor(BaseQuoteExtractor):
@@ -47,32 +48,11 @@ class OpenSearchQuoteExtractor(BaseQuoteExtractor):
         self.config: OpenSearchConfig = config  # Explicitly type for mypy
 
         # Initialize OpenSearch client
-        region = self.config.region
 
         auth = None
-        if self.config.secret_id:
-            logger.info(
-                f"Fetching OpenSearch credentials from Secrets Manager: {self.config.secret_id}"
-            )
-            secret = self.get_aws_secret(self.config.secret_id)
-            user = secret.get("username") or secret.get("OPENSEARCH_USER")
-            pwd = secret.get("password") or secret.get("OPENSEARCH_PASSWORD")
-
-            if user and pwd:
-                auth = (user, pwd)
-            else:
-                logger.warning("Basic auth credentials (username/password) not found in Secret: ")
-
-        if not auth:
-            logger.info("Using IAM authentication for OpenSearch.")
-            credentials = self.session.get_credentials()
-            auth = AWS4Auth(
-                credentials.access_key,
-                credentials.secret_key,
-                region,
-                "es",
-                session_token=credentials.token,
-            )
+        if self.config.opensearch_user and self.config.opensearch_password:
+            logger.info("Using OpenSearch credentials from environment.")
+            auth = (self.config.opensearch_user, self.config.opensearch_password)
 
         self.os_client = OpenSearch(
             hosts=[{"host": self.config.endpoint, "port": self.config.port}],
