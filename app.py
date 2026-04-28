@@ -13,6 +13,7 @@ from src.utils import (
     start_extraction_job,
 )
 from src.visualiser_graph_loader import (
+    available_visualisations,
     extract_path_parts,
     load_json_file,
     visualiser_graph_file_path,
@@ -21,7 +22,6 @@ from src.visualiser_graph_loader import (
 
 load_dotenv()
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -43,6 +43,11 @@ def create_app():
             extract_path_parts(source_path_param)
 
         return render_template("graph.html", source_path=source_path_param or "")
+
+    @app.route("/visualisations", methods=["GET"])
+    def visualisations_page():
+        """Serve a page listing all available visualisations."""
+        return render_template("visualisations.html", visualisations=available_visualisations())
 
     @app.route("/graph-viewmodel", methods=["GET"])
     async def graph_viewmodel():
