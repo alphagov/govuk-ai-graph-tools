@@ -154,6 +154,7 @@ def build_node_structure(
 ) -> GraphOutput:
     """Constructs the final list of nodes and edges."""
     nodes, edges = [], []
+    id_to_canonical = {ent.id: ent.canonical_key for ent in entities}
 
     for ent in entities:
         ent_id = ent.canonical_key
@@ -190,9 +191,24 @@ def build_node_structure(
                         source=ent_id,
                         target=alias_id,
                         label=f"Alias ({count})" if count > 0 else "Alias",
+                        edge_type="alias",
                     )
                 )
             )
+
+    for rel in relationships or []:
+        source = id_to_canonical.get(rel.from_, rel.from_)
+        target = id_to_canonical.get(rel.to, rel.to)
+        edges.append(
+            Edge(
+                data=EdgeData(
+                    source=source,
+                    target=target,
+                    label=rel.type,
+                    edge_type="relationship",
+                )
+            )
+        )
 
     return GraphOutput(nodes=nodes, edges=edges, relationships=relationships or [])
 

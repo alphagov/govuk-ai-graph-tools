@@ -62,3 +62,20 @@ def test_graph_output_relationships_contain_required_fields():
         assert "type" in rel
         assert "from_" in rel
         assert "to" in rel
+
+
+def test_relationship_edges_reference_existing_nodes():
+    data = load_json_file(FIXTURE_PATH)
+    graph = GraphInput.model_validate(data)
+    empty_results = defaultdict(lambda: defaultdict(list))
+
+    output = build_node_structure(graph.entities, empty_results, graph.relationships)
+    dumped = output.model_dump(exclude_none=True)
+
+    node_ids = {n["data"]["id"] for n in dumped["nodes"]}
+    relationship_edges = [e for e in dumped["edges"] if e["data"].get("edge_type") == "relationship"]
+
+    assert len(relationship_edges) > 0
+    for edge in relationship_edges:
+        assert edge["data"]["source"] in node_ids, f"source {edge['data']['source']} not in nodes"
+        assert edge["data"]["target"] in node_ids, f"target {edge['data']['target']} not in nodes"
