@@ -1,6 +1,8 @@
 import os
+from collections import defaultdict
 
 from src.models.graph_models import GraphInput
+from src.visualiser_graph_generator import build_node_structure
 from src.visualiser_graph_loader import load_json_file, visualiser_graph_file_path
 
 FIXTURE_PATH = os.path.join(
@@ -45,3 +47,18 @@ def test_local_fixture_loads_independently_of_s3_path():
 
     assert data is not None
     assert isinstance(data, dict)
+
+
+def test_graph_output_relationships_contain_required_fields():
+    data = load_json_file(FIXTURE_PATH)
+    graph = GraphInput.model_validate(data)
+    empty_results = defaultdict(lambda: defaultdict(list))
+
+    output = build_node_structure(graph.entities, empty_results, graph.relationships)
+    dumped = output.model_dump(exclude_none=True)
+
+    assert len(dumped["relationships"]) > 0
+    for rel in dumped["relationships"]:
+        assert "type" in rel
+        assert "from_" in rel
+        assert "to" in rel
