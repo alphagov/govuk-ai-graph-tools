@@ -78,7 +78,8 @@ async def fetch_extraction_findings(
             endpoint=os.getenv("OPENSEARCH_ENDPOINT", "localhost"),
             port=int(os.getenv("OPENSEARCH_PORT", "4443")),
             index_name=os.getenv("OPENSEARCH_INDEX", "document_chunks"),
-            secret_id=os.getenv("OPENSEARCH_SECRET_ID"),
+            opensearch_user=os.getenv("OPENSEARCH_USER"),
+            opensearch_password=os.getenv("OPENSEARCH_PASSWORD"),
         )
         extractor = OpenSearchQuoteExtractor(config)
 

@@ -56,7 +56,6 @@ class BaseExtractorConfig:
         )
     )
     chunk_max_chars: int = 6000
-    secret_id: Optional[str] = None
     aws_profile: Optional[str] = None
     aws_access_key_id: Optional[str] = None
     aws_secret_access_key: Optional[str] = None
