@@ -1,0 +1,70 @@
+{
+  "domain": "test-domain-01",
+  "schema_version": "1.0.1",
+  "extracted_at": "2026-04-20T10:00:00.000000Z",
+  "entities": [
+    {
+      "id": "entity_000000",
+      "canonical_key": "scheme__entity_a",
+      "label": "EntityA",
+      "aliases": [
+        {
+          "name": "entity a",
+          "source_files": [
+            "s3://govuk-ai-accelerator-data-integration/test-domain-01/input/doc-a.md"
+          ]
+        }
+      ],
+      "type": "Scheme",
+      "description": "A test entity.",
+      "properties": {
+        "sourceUrls": "s3://govuk-ai-accelerator-data-integration/test-domain-01/input/doc-a.md"
+      },
+      "metadata": {
+        "confidence": 1.0,
+        "first_seen": "2026-04-20T10:00:00Z",
+        "last_updated": "2026-04-20T10:00:00Z"
+      }
+    },
+    {
+      "id": "entity_000001",
+      "canonical_key": "document__entity_b",
+      "label": "EntityB",
+      "aliases": [
+        {
+          "name": "entity b",
+          "source_files": [
+            "s3://govuk-ai-accelerator-data-integration/test-domain-01/input/doc-a.md"
+          ]
+        }
+      ],
+      "type": "Document",
+      "description": "Another test entity.",
+      "properties": {
+        "sourceUrls": "s3://govuk-ai-accelerator-data-integration/test-domain-01/input/doc-a.md"
+      },
+      "metadata": {
+        "confidence": 1.0,
+        "first_seen": "2026-04-20T10:00:00Z",
+        "last_updated": "2026-04-20T10:00:00Z"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "rel_000000",
+      "type": "requires",
+      "from_": "entity_000000",
+      "to": "entity_000001",
+      "properties": {
+        "sourceUrls": "s3://govuk-ai-accelerator-data-integration/test-domain-01/input/doc-a.md",
+        "modality": "mandatory",
+        "description": "EntityA requires EntityB."
+      },
+      "metadata": {
+        "confidence": 1.0,
+        "timestamp": "2026-04-20T10:00:00Z"
+      }
+    }
+  ]
+}
