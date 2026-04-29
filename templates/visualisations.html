@@ -15,7 +15,7 @@
       <ul class="visualisation-list">
         {% for v in visualisations %}
         <li>
-          <a href="{{ url_for('graph_page', source_path=v.source_path) }}">{{ v.source_path }}</a>
+          <a href="{{ url_for('graph_page', run_path=v.run_path) }}">{{ v.run_path }}</a>
         </li>
         {% endfor %}
       </ul>

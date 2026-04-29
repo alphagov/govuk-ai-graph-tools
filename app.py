@@ -35,31 +35,31 @@ def create_app():
     @app.route("/graph", methods=["GET"])
     def graph_page():
         """Serve the Cytoscape graph viewer page."""
-        source_path_param = request.args.get("source_path")
-        if not source_path_param:
-            return render_template("graph.html", source_path="")
+        run_path_param = request.args.get("run_path")
+        if not run_path_param:
+            return render_template("graph.html", run_path="")
 
         try:
             # Attempt to load the graph data to determine if it's available
-            visualisation_graph_data(source_path_param)
+            visualisation_graph_data(run_path_param)
 
-            return render_template("graph.html", source_path=source_path_param)
+            return render_template("graph.html", run_path=run_path_param)
         except Exception:
-            logger.exception(f"Error loading graph data for '{source_path_param}'")
+            logger.exception(f"Error loading graph data for '{run_path_param}'")
 
-        job_id = get_job_id_for_path(source_path_param)
-        logger.info(f"Checking job status for '{source_path_param}' with job ID '{job_id}'")
+        job_id = get_job_id_for_path(run_path_param)
+        logger.info(f"Checking job status for '{run_path_param}' with job ID '{job_id}'")
 
         job_status_metadata = read_job_status_metadata(job_id)
 
         if not job_status_metadata:
-            error = f"No extraction job found for '{source_path_param}'."
+            error = f"No extraction job found for '{run_path_param}'."
         else:
             match job_status_metadata.get("status"):
                 case JobStatus.PENDING | JobStatus.RUNNING:
-                    error = f"Graph for '{source_path_param}' is not available yet."
+                    error = f"Graph for '{run_path_param}' is not available yet."
                 case _:
-                    error = f"Graph for '{source_path_param}' failed to generate."
+                    error = f"Graph for '{run_path_param}' failed to generate."
 
         return render_template("graph-unavailable.html", message=error)
 
@@ -72,9 +72,9 @@ def create_app():
     async def graph_viewmodel():
         """Serve the graph data as JSON for the frontend."""
         try:
-            source_path_param = request.args.get("source_path")
+            run_path_param = request.args.get("run_path")
 
-            graph_data = visualisation_graph_data(source_path_param)
+            graph_data = visualisation_graph_data(run_path_param)
 
             logger.info("Graph data loaded successfully.")
             return jsonify(graph_data), 200

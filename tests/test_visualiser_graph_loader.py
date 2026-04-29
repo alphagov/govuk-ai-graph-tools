@@ -34,9 +34,9 @@ class TestAvailableVisualisations:
 
         assert isinstance(result, list)
         assert len(result) == 3
-        assert {"source_path": "domain-a/run-2024-001"} in result
-        assert {"source_path": "domain-b/run-2024-002"} in result
-        assert {"source_path": "domain-b/run-2024-003"} in result
+        assert {"run_path": "domain-a/run-2024-001"} in result
+        assert {"run_path": "domain-b/run-2024-002"} in result
+        assert {"run_path": "domain-b/run-2024-003"} in result
 
     @patch("src.visualiser_graph_loader.fsspec.filesystem")
     def test_filters_out_non_run_directories(self, mock_filesystem):
@@ -55,7 +55,7 @@ class TestAvailableVisualisations:
         result = available_visualisations()
 
         assert len(result) == 1
-        assert result[0] == {"source_path": "domain-a/run-2024-001"}
+        assert result[0] == {"run_path": "domain-a/run-2024-001"}
 
     @patch("src.visualiser_graph_loader.fsspec.filesystem")
     def test_returns_empty_list_when_no_visualisations(self, mock_filesystem):
@@ -90,4 +90,4 @@ class TestAvailableVisualisations:
         result = available_visualisations()
 
         assert len(result) == 1
-        assert result[0]["source_path"] == "my-domain/run-2025-001"
+        assert result[0]["run_path"] == "my-domain/run-2025-001"
