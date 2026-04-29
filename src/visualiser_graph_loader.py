@@ -30,6 +30,12 @@ def visualiser_graph_file_path(source_path: str | None) -> str:
     return filename
 
 
+def visualisation_graph_data(source_path: str | None) -> Dict[str, Any]:
+    graph_filepath = visualiser_graph_file_path(source_path)
+    graph_data = load_json_file(graph_filepath)
+    return graph_data
+
+
 def extract_path_parts(path: str) -> tuple[str, str]:
     match = re.fullmatch(ONTOLOGY_RUN_PATH_PATTERN, path)
     if not match:
