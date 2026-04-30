@@ -20,7 +20,6 @@ from src.models.graph_models import (
     Node,
     NodeData,
     Occurrence,
-    Relationship,
 )
 
 
@@ -59,6 +58,10 @@ async def fetch_extraction_findings(
     """Runs the extractor over unique S3 documents using the specified strategy."""
     import os
 
+    from dotenv import load_dotenv
+
+    load_dotenv()
+
     doc_to_keywords: Dict[str, List[str]] = {
         uri: list(data["keywords"]) for uri, data in registry.items() if data["keywords"]
     }
@@ -73,14 +76,36 @@ async def fetch_extraction_findings(
         for keywords in doc_to_keywords.values():
             all_keywords.update(keywords)
 
+        endpoint = os.getenv("OPENSEARCH_URL", "localhost")
+        port = int(os.getenv("OPENSEARCH_PORT", "443"))
+        index_name = os.getenv("OPENSEARCH_INDEX", "document_chunks")
+        opensearch_user = os.getenv("OPENSEARCH_USER")
+        opensearch_password = os.getenv("OPENSEARCH_PASSWORD")
+
+        if secret_id := os.getenv("OPENSEARCH_ID"):
+            try:
+                import boto3
+
+                region = os.getenv("AWS_REGION", os.getenv("AWS_DEFAULT_REGION", "eu-west-2"))
+                client = boto3.client("secretsmanager", region_name=region)
+                secret_str = client.get_secret_value(secret_id).get("SecretString")
+
+                if secret_str:
+                    secret = json.loads(secret_str)
+                    endpoint = secret.get("url")
+                    opensearch_user = secret.get("username")
+                    opensearch_password = secret.get("password")
+            except Exception as e:
+                logger.error(f"Failed to fetch OpenSearch credentials from Secrets Manager: {e}")
+
         config = OpenSearchConfig(
             keywords=sorted(list(all_keywords)),
             s3_documents=list(doc_to_keywords.keys()),
-            endpoint=os.getenv("OPENSEARCH_ENDPOINT", "localhost"),
-            port=int(os.getenv("OPENSEARCH_PORT", "4443")),
-            index_name=os.getenv("OPENSEARCH_INDEX", "document_chunks"),
-            opensearch_user=os.getenv("OPENSEARCH_USER"),
-            opensearch_password=os.getenv("OPENSEARCH_PASSWORD"),
+            endpoint=endpoint,
+            port=port,
+            index_name=index_name,
+            opensearch_user=opensearch_user,
+            opensearch_password=opensearch_password,
         )
         extractor = OpenSearchQuoteExtractor(config)
 
@@ -148,14 +173,9 @@ def map_findings_to_entities(
     return results
 
 
-def build_node_structure(
-    entities: List[Entity],
-    entity_results: Dict[str, Any],
-    relationships: Optional[List[Relationship]] = None,
-) -> GraphOutput:
+def build_node_structure(entities: List[Entity], entity_results: Dict[str, Any]) -> GraphOutput:
     """Constructs the final list of nodes and edges."""
     nodes, edges = [], []
-    id_to_canonical = {ent.id: ent.canonical_key for ent in entities}
 
     for ent in entities:
         ent_id = ent.canonical_key
@@ -192,26 +212,11 @@ def build_node_structure(
                         source=ent_id,
                         target=alias_id,
                         label=f"Alias ({count})" if count > 0 else "Alias",
-                        edge_type="alias",
                     )
                 )
             )
 
-    for rel in relationships or []:
-        source = id_to_canonical.get(rel.from_, rel.from_)
-        target = id_to_canonical.get(rel.to, rel.to)
-        edges.append(
-            Edge(
-                data=EdgeData(
-                    source=source,
-                    target=target,
-                    label=rel.type,
-                    edge_type="relationship",
-                )
-            )
-        )
-
-    return GraphOutput(nodes=nodes, edges=edges, relationships=relationships or [])
+    return GraphOutput(nodes=nodes, edges=edges)
 
 
 async def generate_graph(
@@ -246,7 +251,7 @@ async def generate_graph(
     )
     entity_results = map_findings_to_entities(raw_findings, registry)
 
-    cy_graph = build_node_structure(entities, entity_results, validated_input.relationships)
+    cy_graph = build_node_structure(entities, entity_results)
     cy_json = cy_graph.model_dump(exclude_none=True)
 
     if output_path:
