@@ -82,7 +82,7 @@ async def fetch_extraction_findings(
         opensearch_user = os.getenv("OPENSEARCH_USER")
         opensearch_password = os.getenv("OPENSEARCH_PASSWORD")
 
-        if secret_id := os.getenv("OPENSEARCH_SECRET_ID"):
+        if secret_id := os.getenv("OPENSEARCH_ID"):
             try:
                 import boto3
 
