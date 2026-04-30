@@ -48,7 +48,7 @@ def extract_path_parts(path: str) -> tuple[str, str]:
 
 
 def available_visualisations():
-    fs = fsspec.filesystem("s3")
+    fs = fsspec.filesystem("s3", use_listings_cache=False)
     items = []
 
     try:
