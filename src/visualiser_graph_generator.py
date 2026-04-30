@@ -89,7 +89,7 @@ async def fetch_extraction_findings(
 
                 region = os.getenv("AWS_REGION", os.getenv("AWS_DEFAULT_REGION", "eu-west-2"))
                 client = boto3.client("secretsmanager", region_name=region)
-                secret_str = client.get_secret_value(secret_id).get("SecretString")
+                secret_str = client.get_secret_value(SecretId=secret_id).get("SecretString")
 
                 if secret_str:
                     secret = json.loads(secret_str)
