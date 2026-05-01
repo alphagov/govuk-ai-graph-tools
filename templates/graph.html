@@ -77,64 +77,62 @@
             elements: graphData,
             style: [
               {
+                selector: 'node',
+                style: {
+                  'text-valign': 'center',
+                  'text-halign': 'right',
+                  'text-margin-x': 1,
+                  'shape': 'ellipse',
+                  'width': '10px',
+                  'height': '10px',
+                  'label': 'data(label)',
+                  'color': '#0b0c0c',
+                  'font-size': 3,
+                }
+              },
+              {
                 selector: 'node[type="entity"]',
                 style: {
-                  'background-color': '#2563eb',
-                  'label': 'data(label)',
-                  'color': '#000000',
-                  'text-valign': 'center',
-                  'text-halign': 'center',
-                  'width': '15px',
-                  'height': '15px',
-                  'padding': '12px',
-                  'shape': 'ellipse',
-                  'text-halign': 'right',
-                  'text-margin-x': 5,
+                  'background-color': '#1d70b8',
                 }
               },
               {
                 selector: 'node[type="alias"]',
                 style: {
-                  'background-color': '#f59e0b',
-                  'label': 'data(label)',
-                  'color': '#111827',
-                  'text-valign': 'center',
-                  'text-halign': 'center',
-                  'width': '15px',
-                  'height': '15px',
-                  'padding': '10px',
-                  'shape': 'ellipse',
-                  'text-halign': 'right',
-                  'text-margin-x': 5,
+                  'background-color': '#f47738',
                 }
               },
               {
                 selector: 'edge',
                 style: {
-                  'width': 2,
+                  'width': 0.5,
+                  'target-arrow-shape': 'vee',
+                  'color': '#0b0c0c',
+                  'curve-style': 'bezier',
+                  'text-rotation': 'autorotate',
+                }
+              },
+              {
+                selector: 'edge[edge_type="alias"]',
+                style: {
                   'line-color': '#9ca3af',
                   'target-arrow-color': '#9ca3af',
-                  'target-arrow-shape': 'triangle',
-                  'curve-style': 'bezier',
-                  'label': 'data(label)',
-                  'font-size': 10,
-                  'text-rotation': 'autorotate',
-                  'text-margin-y': -8
                 }
               },
               {
                 selector: 'edge[edge_type="relationship"]',
                 style: {
-                  'width': 2,
-                  'line-color': '#7c3aed',
-                  'target-arrow-color': '#7c3aed',
+                  'label': 'data(label)',
+                  'font-size': 3,
+                  'line-color': '#a395db',
                   'line-style': 'dashed',
+                  'target-arrow-color': '#a395db',
                 }
               },
               {
                 selector: ':selected',
                 style: {
-                  'border-width': 3,
+                  'border-width': 0.5,
                   'border-color': '#10b981'
                 }
               }
@@ -144,6 +142,8 @@
               fit: true,
               nodeDimensionsIncludeLabels: true,
               componentSpacing: 200,
+              nodeRepulsion: function( node ) { return 2000; },
+              nodeOverlap: 1,
             }
           });
 
