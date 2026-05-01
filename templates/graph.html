@@ -25,6 +25,8 @@
       const sidebarTitle = document.getElementById('sidebar-title');
       const details = document.getElementById('node-details');
 
+      const BASE_NODE_SIZE = 10;
+
       function escapeHtml(value) {
         return String(value || '')
           .replace(/&/g, '&amp;')
@@ -59,6 +61,18 @@
         }).join('');
       }
 
+      function calculateEntityNodeSize(node) {
+        const data = node.data();
+        const aliasCount = node.connectedEdges('edge[edge_type="alias"]').length;
+        return BASE_NODE_SIZE + aliasCount * 2;
+      }
+
+      function calculateAliasNodeSize(node) {
+        const data = node.data();
+        const occurrences = Array.isArray(data.occurrences) ? data.occurrences : [];
+        return BASE_NODE_SIZE + (occurrences.length * 2);
+      }
+
       async function loadGraph() {
         try {
           const response = await fetch('/graph-viewmodel?run_path={{ run_path }}');
@@ -82,8 +96,6 @@
                   'text-halign': 'right',
                   'text-margin-x': 1,
                   'shape': 'ellipse',
-                  'width': '10px',
-                  'height': '10px',
                   'label': 'data(label)',
                   'color': '#0b0c0c',
                   'font-size': 3,
@@ -93,12 +105,16 @@
                 selector: 'node[type="entity"]',
                 style: {
                   'background-color': '#1d70b8',
+                  'width': calculateEntityNodeSize,
+                  'height': calculateEntityNodeSize,
                 }
               },
               {
                 selector: 'node[type="alias"]',
                 style: {
                   'background-color': '#f47738',
+                  'width': calculateAliasNodeSize,
+                  'height': calculateAliasNodeSize,
                 }
               },
               {
