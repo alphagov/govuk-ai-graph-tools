@@ -39,12 +39,22 @@
       function renderEntityDetails(node) {
         const data = node.data();
 
-        const aliasNodes = node.connectedEdges('edge[edge_type="alias"]');
+        const aliasEdges = node.connectedEdges('edge[edge_type="alias"]');
+        const aliasNodes = aliasEdges.connectedNodes('node[type="alias"]');
         const aliasCount = aliasNodes.length;
         sidebarTitle.textContent =
           data.label
           + ` (${aliasCount} alias${aliasCount !== 1 ? 'es' : ''})`;
-        details.innerHTML = '<p>No occurrences available.</p>';
+        
+        if (aliasCount === 0) {
+          details.innerHTML = '<p>No aliases available.</p>';
+        } else {
+          const aliasList = aliasNodes.map(aliasNode => {
+            const aliasLabel = aliasNode.data('label');
+            return `<li>${escapeHtml(aliasLabel)}</li>`;
+          }).join('');
+          details.innerHTML = `<ul>${aliasList}</ul>`;
+        }
       }
 
       function renderAliasDetails(node) {
