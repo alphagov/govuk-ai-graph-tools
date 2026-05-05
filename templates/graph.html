@@ -36,29 +36,60 @@
           .replace(/'/g, '&#39;');
       }
 
-      function renderNodeDetails(node) {
+      function renderEntityDetails(node) {
         const data = node.data();
-        sidebarTitle.textContent = data.label;
 
+        const aliasEdges = node.connectedEdges('edge[edge_type="alias"]');
+        const aliasNodes = aliasEdges.connectedNodes('node[type="alias"]');
+        const aliasCount = aliasNodes.length;
+        sidebarTitle.textContent =
+          data.label
+          + ` (${aliasCount} alias${aliasCount !== 1 ? 'es' : ''})`;
+        
+        if (aliasCount === 0) {
+          details.innerHTML = '<p>No aliases available.</p>';
+        } else {
+          const aliasList = aliasNodes.map(aliasNode => {
+            const aliasLabel = aliasNode.data('label');
+            return `<li>${escapeHtml(aliasLabel)}</li>`;
+          }).join('');
+          details.innerHTML = `<ul>${aliasList}</ul>`;
+        }
+      }
+
+      function renderAliasDetails(node) {
+        const data = node.data();
         const occurrences = Array.isArray(data.occurrences) ? data.occurrences : [];
-        if (!occurrences.length) {
+
+        sidebarTitle.textContent =
+          data.label
+          + ` (${occurrences.length} occurrence${occurrences.length !== 1 ? 's' : ''})`;
+
+        if (occurrences.length === 0) {
           details.innerHTML = '<p>No occurrences available.</p>';
-          return;
         }
         else {
-          sidebarTitle.textContent += ` (${occurrences.length} occurrence${occurrences.length > 1 ? 's' : ''})`;
+          details.innerHTML = occurrences.map(item => {
+            const link = escapeHtml(item.link);
+            const context = item.context;
+            return `
+              <section>
+                <p><a href="${link}" target="_blank" rel="noopener noreferrer">View on GOV.UK</a></p>
+                <p>${context}</p>
+              </section>
+            `;
+          }).join('');
         }
+      }
 
-        details.innerHTML = occurrences.map(item => {
-          const link = escapeHtml(item.link);
-          const context = item.context;
-          return `
-            <section>
-              <p><a href="${link}" target="_blank" rel="noopener noreferrer">View on GOV.UK</a></p>
-              <p>${context}</p>
-            </section>
-          `;
-        }).join('');
+      function renderNodeDetails(node) {
+        const data = node.data();
+        if (data.type === 'entity') {
+          renderEntityDetails(node);
+        }
+        else if (data.type === 'alias') {
+          renderAliasDetails(node);
+        }
       }
 
       function calculateEntityNodeSize(node) {
