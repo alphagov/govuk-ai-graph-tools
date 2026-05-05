@@ -27,25 +27,17 @@
 
       const BASE_NODE_SIZE = 10;
 
-      function escapeHtml(value) {
-        return String(value || '')
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#39;');
-      }
-
       function renderEntityDetails(node) {
         const data = node.data();
 
         const aliasEdges = node.connectedEdges('edge[edge_type="alias"]');
         const aliasNodes = aliasEdges.connectedNodes('node[type="alias"]');
         const aliasCount = aliasNodes.length;
+
         sidebarTitle.textContent =
           data.label
           + ` (${aliasCount} alias${aliasCount !== 1 ? 'es' : ''})`;
-        
+
         if (aliasCount === 0) {
           details.innerHTML = '<p>No aliases available.</p>';
         } else {
@@ -70,11 +62,10 @@
         }
         else {
           details.innerHTML = occurrences.map(item => {
-            const link = escapeHtml(item.link);
             const context = item.context;
             return `
               <section>
-                <p><a href="${link}" target="_blank" rel="noopener noreferrer">View on GOV.UK</a></p>
+                <p><a href="${item.link}" target="_blank" rel="noopener noreferrer">View on GOV.UK</a></p>
                 <p>${context}</p>
               </section>
             `;
