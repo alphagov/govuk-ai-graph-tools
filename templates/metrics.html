@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Metrics Dashboard (React CDN Sample)</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f3f4f6;
+        color: #111827;
+      }
+      h1 {
+        font-size: 1.5rem;
+        margin-bottom: 20px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+      }
+      th, td {
+        padding: 12px 16px;
+        text-align: left;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      th {
+        background-color: #f9fafb;
+        font-weight: 600;
+        color: #374151;
+      }
+      tr:last-child td {
+        border-bottom: none;
+      }
+      tr:hover {
+        background-color: #f9fafb;
+      }
+      .badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-transform: capitalize;
+      }
+      .badge.entity {
+        background-color: #dbeafe;
+        color: #1e40af;
+      }
+      .badge.alias {
+        background-color: #fef3c7;
+        color: #b45309;
+      }
+      .search-bar {
+        width: 100%;
+        max-width: 400px;
+        padding: 10px;
+        margin-bottom: 20px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 1rem;
+      }
+      .loading {
+        color: #6b7280;
+        font-style: italic;
+      }
+      .btn {
+        padding: 8px 16px;
+        background-color: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background-color 0.2s;
+      }
+      .btn:hover:not(:disabled) {
+        background-color: #1d4ed8;
+      }
+      .btn:disabled {
+        background-color: #93c5fd;
+        cursor: not-allowed;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- The DOM element where React will mount -->
+    <div id="root"></div>
+
+    <!-- React Dependencies via CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Babel standalone for compiling JSX in the browser -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Our React Code -->
+    {% raw %}
+    <script type="text/babel">
+      const { useState, useEffect, useMemo } = React;
+
+      function MetricsDashboard() {
+        const [data, setData] = useState(null);
+        const [loading, setLoading] = useState(true);
+        const [error, setError] = useState(null);
+        const [searchTerm, setSearchTerm] = useState("");
+        const [currentPage, setCurrentPage] = useState(1);
+        const [pageSize, setPageSize] = useState(10);
+        
+        const [expandedEntities, setExpandedEntities] = useState(new Set());
+        const [selectedItems, setSelectedItems] = useState(new Set());
+
+        // Fetch data from the existing backend endpoint
+        useEffect(() => {
+          fetch('/graph-viewmodel')
+            .then((res) => {
+              if (!res.ok) throw new Error("Failed to fetch graph data");
+              return res.json();
+            })
+            .then((json) => {
+              const edges = json.edges || [];
+              const nodes = json.nodes || [];
+
+              const nodeMap = {};
+              nodes.forEach(n => nodeMap[n.data.id] = n);
+
+              const entityNodes = nodes.filter(n => n.data.type === 'entity');
+              const entityMap = {};
+              entityNodes.forEach(e => {
+                entityMap[e.data.id] = { ...e, aliases: [] };
+              });
+
+              edges.forEach(edge => {
+                const { source, target } = edge.data;
+                if (entityMap[source] && nodeMap[target]) {
+                  entityMap[source].aliases.push(nodeMap[target]);
+                }
+              });
+
+              setData(Object.values(entityMap));
+              setLoading(false);
+            })
+            .catch((err) => {
+              console.error(err);
+              setError(err.message);
+              setLoading(false);
+            });
+        }, []);
+
+        // Filter the rows based on the search string
+        const filteredEntities = useMemo(() => {
+          if (!data) return [];
+          const lowerSearch = searchTerm.toLowerCase();
+          
+          return data.filter((entity) => {
+            const { label = "" } = entity.data;
+            const matchesEntity = !searchTerm || label.toLowerCase().includes(lowerSearch);
+            
+            const hasMatchingAlias = entity.aliases.some(a => a.data.label?.toLowerCase().includes(lowerSearch));
+            
+            return matchesEntity || hasMatchingAlias;
+          });
+        }, [data, searchTerm]);
+
+        // Auto-expand and reset pagination
+        useEffect(() => {
+          setCurrentPage(1);
+          if (searchTerm && data) {
+            const lowerSearch = searchTerm.toLowerCase();
+            setExpandedEntities(prev => {
+              const next = new Set(prev);
+              data.forEach(entity => {
+                const hasMatchingAlias = entity.aliases.some(a => a.data.label?.toLowerCase().includes(lowerSearch));
+                if (hasMatchingAlias) {
+                  next.add(entity.data.id);
+                }
+              });
+              return next;
+            });
+          }
+        }, [searchTerm, data]);
+
+        const toggleSelectEntity = (entityId, aliases) => {
+          const newSelected = new Set(selectedItems);
+          const isSelected = newSelected.has(entityId);
+          
+          if (isSelected) {
+            newSelected.delete(entityId);
+            aliases.forEach(a => newSelected.delete(a.data.id));
+          } else {
+            newSelected.add(entityId);
+            aliases.forEach(a => newSelected.add(a.data.id));
+          }
+          setSelectedItems(newSelected);
+        };
+
+        const toggleSelectAlias = (aliasId, entityId) => {
+          const newSelected = new Set(selectedItems);
+          if (newSelected.has(aliasId)) {
+            newSelected.delete(aliasId);
+            newSelected.delete(entityId);
+          } else {
+            newSelected.add(aliasId);
+            const entity = data.find(e => e.data.id === entityId);
+            if (entity && entity.aliases.every(a => newSelected.has(a.data.id) || a.data.id === aliasId)) {
+              newSelected.add(entityId);
+            }
+          }
+          setSelectedItems(newSelected);
+        };
+
+        const handleExport = () => {
+          if (!data || selectedItems.size === 0) return;
+          const exportNodes = [];
+          data.forEach(entity => {
+            if (selectedItems.has(entity.data.id)) exportNodes.push(entity);
+            entity.aliases.forEach(alias => {
+              if (selectedItems.has(alias.data.id)) exportNodes.push(alias);
+            });
+          });
+          
+          const blob = new Blob([JSON.stringify(exportNodes, null, 2)], { type: "application/json" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "metrics_export.json";
+          a.click();
+          URL.revokeObjectURL(url);
+        };
+
+        // Calculate pagination slices for entities
+        const totalPages = Math.ceil(filteredEntities.length / pageSize);
+        const startIndex = (currentPage - 1) * pageSize;
+        const paginatedNodes = filteredEntities.slice(startIndex, startIndex + pageSize);
+
+        if (loading) return <p className="loading">Loading metrics data...</p>;
+        if (error) return <p style={{ color: 'red' }}>Error: {error}</p>;
+        if (!data || data.length === 0) return <p>No graph nodes found.</p>;
+
+        return (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h1 style={{ margin: 0 }}>Node Metrics ({filteredEntities.length} entities)</h1>
+              <button 
+                className="btn" 
+                disabled={selectedItems.size === 0} 
+                onClick={handleExport}
+              >
+                Export Selected ({selectedItems.size})
+              </button>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+              <input
+                type="text"
+                className="search-bar"
+                style={{ marginBottom: 0 }}
+                placeholder="Search by label or alias..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+            <table>
+              <thead>
+                <tr>
+                  <th style={{ width: '40px' }}>
+                    <input 
+                      type="checkbox"
+                      checked={filteredEntities.length > 0 && paginatedNodes.every(e => selectedItems.has(e.data.id))}
+                      onChange={(e) => {
+                        const newSelected = new Set(selectedItems);
+                        const isChecked = e.target.checked;
+                        paginatedNodes.forEach(entity => {
+                          if (isChecked) {
+                            newSelected.add(entity.data.id);
+                            entity.aliases.forEach(a => newSelected.add(a.data.id));
+                          } else {
+                            newSelected.delete(entity.data.id);
+                            entity.aliases.forEach(a => newSelected.delete(a.data.id));
+                          }
+                        });
+                        setSelectedItems(newSelected);
+                      }}
+                    />
+                  </th>
+                  <th>Label</th>
+                  <th>Type</th>
+                  <th>Occurrences</th>
+                  <th>Node ID</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedNodes.flatMap((entity) => {
+                  const item = entity.data;
+                  const isExpanded = expandedEntities.has(item.id);
+                  
+                  const rows = [];
+                  
+                  // Entity Row
+                  rows.push(
+                    <tr key={item.id} style={{ background: isExpanded ? '#f3f4f6' : 'white' }}>
+                      <td>
+                        <input 
+                          type="checkbox" 
+                          checked={selectedItems.has(item.id)} 
+                          onChange={() => toggleSelectEntity(item.id, entity.aliases)} 
+                        />
+                      </td>
+                      <td>
+                        <button 
+                          onClick={() => {
+                            const next = new Set(expandedEntities);
+                            if (next.has(item.id)) next.delete(item.id);
+                            else next.add(item.id);
+                            setExpandedEntities(next);
+                          }}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', marginRight: '8px', width: '20px', textAlign: 'center' }}
+                        >
+                          {isExpanded ? '▼' : '▶'}
+                        </button>
+                        <strong>{item.label}</strong>
+                        {entity.aliases.length > 0 && <span style={{ color: '#6b7280', fontSize: '0.875rem', marginLeft: '8px' }}>({entity.aliases.length} aliases)</span>}
+                      </td>
+                      <td>
+                        <span className="badge entity">
+                          {item.type}
+                        </span>
+                      </td>
+                      <td style={{ color: '#9ca3af' }}>-</td>
+                      <td style={{ color: '#6b7280', fontSize: '0.875rem', wordBreak: 'break-all' }}>{item.id}</td>
+                    </tr>
+                  );
+
+                  // Alias Rows
+                  if (isExpanded) {
+                    entity.aliases.forEach(alias => {
+                      const aliasData = alias.data;
+                      const aCount = aliasData.occurrences ? aliasData.occurrences.length : 0;
+                      rows.push(
+                        <tr key={aliasData.id} style={{ background: '#fafafa' }}>
+                          <td>
+                            <input 
+                              type="checkbox" 
+                              checked={selectedItems.has(aliasData.id)} 
+                              onChange={() => toggleSelectAlias(aliasData.id, item.id)} 
+                              style={{ marginLeft: '12px' }}
+                            />
+                          </td>
+                          <td style={{ paddingLeft: '40px' }}>
+                            <span style={{ color: '#9ca3af', marginRight: '8px' }}>↳</span>
+                            {aliasData.label}
+                          </td>
+                          <td>
+                            <span className="badge alias">
+                              {aliasData.type}
+                            </span>
+                          </td>
+                          <td>{aCount} occurrence{aCount !== 1 && 's'}</td>
+                          <td style={{ color: '#6b7280', fontSize: '0.875rem', wordBreak: 'break-all' }}>{aliasData.id}</td>
+                        </tr>
+                      );
+                    });
+                  }
+
+                  return rows;
+                })}
+              </tbody>
+            </table>
+            
+            {/* Pagination Controls */}
+            {filteredEntities.length > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', fontSize: '0.875rem' }}>
+                <div style={{ color: '#6b7280' }}>
+                  Showing {startIndex + 1} to {Math.min(startIndex + pageSize, filteredEntities.length)} of {filteredEntities.length} entities
+                </div>
+                <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+                  <button 
+                    disabled={currentPage === 1} 
+                    onClick={() => setCurrentPage(prev => prev - 1)}
+                    style={{ padding: '5px 10px', cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
+                  >
+                    Previous
+                  </button>
+                  <span style={{ padding: '0 10px', fontWeight: 500 }}>Page {currentPage} of {totalPages || 1}</span>
+                  <button 
+                    disabled={currentPage >= totalPages} 
+                    onClick={() => setCurrentPage(prev => prev + 1)}
+                    style={{ padding: '5px 10px', cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer' }}
+                  >
+                    Next
+                  </button>
+                </div>
+                <div>
+                  <select 
+                    value={pageSize} 
+                    onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }} 
+                    style={{ padding: '5px', borderRadius: '4px' }}
+                  >
+                    <option value={10}>10 per page</option>
+                    <option value={20}>20 per page</option>
+                    <option value={50}>50 per page</option>
+                  </select>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById("root"));
+      root.render(<MetricsDashboard />);
+    </script>
+    {% endraw %}
+  </body>
+</html>
