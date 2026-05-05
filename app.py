@@ -71,7 +71,8 @@ def create_app():
     @app.route("/metrics", methods=["GET"])
     def metrics_page():
         """Serve the React CDN sample metrics dashboard."""
-        return render_template("metrics.html")
+        run_path_param = request.args.get("run_path", "")
+        return render_template("metrics.html", run_path=run_path_param)
 
     @app.route("/graph-viewmodel", methods=["GET"])
     async def graph_viewmodel():

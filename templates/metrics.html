@@ -99,10 +99,11 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <!-- Our React Code -->
-    {% raw %}
     <script type="text/babel">
       const { useState, useEffect, useMemo } = React;
+      const runPath = "{{ run_path|e }}";
 
+      {% raw %}
       function MetricsDashboard() {
         const [data, setData] = useState(null);
         const [loading, setLoading] = useState(true);
@@ -116,7 +117,7 @@
 
         // Fetch data from the existing backend endpoint
         useEffect(() => {
-          fetch('/graph-viewmodel')
+          fetch(`/graph-viewmodel${runPath ? `?run_path=${encodeURIComponent(runPath)}` : ''}`)
             .then((res) => {
               if (!res.ok) throw new Error("Failed to fetch graph data");
               return res.json();
@@ -414,7 +415,7 @@
 
       const root = ReactDOM.createRoot(document.getElementById("root"));
       root.render(<MetricsDashboard />);
+      {% endraw %}
     </script>
-    {% endraw %}
   </body>
 </html>
