@@ -68,6 +68,12 @@ def create_app():
         """Serve a page listing all available visualisations."""
         return render_template("visualisations.html", visualisations=available_visualisations())
 
+    @app.route("/metrics", methods=["GET"])
+    def metrics_page():
+        """Serve the React CDN sample metrics dashboard."""
+        run_path_param = request.args.get("run_path", "")
+        return render_template("metrics.html", run_path=run_path_param)
+
     @app.route("/graph-viewmodel", methods=["GET"])
     async def graph_viewmodel():
         """Serve the graph data as JSON for the frontend."""
