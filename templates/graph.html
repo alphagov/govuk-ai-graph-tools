@@ -50,6 +50,10 @@
       }
 
       function ensureNodeInView(node) {
+        if (node.hidden()) {
+          return;
+        }
+
         if (!isNodeInViewport(node)) {
           node.cy().animate({
             center: { eles: node },
@@ -241,7 +245,7 @@
                 selector: ':selected',
                 style: {
                   'border-width': 1.5,
-                  'border-color': '#ffdd00'
+                  'border-color': '#ffdd00',
                 }
               }
             ],
