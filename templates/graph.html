@@ -12,7 +12,13 @@
       <p class="status">Loading graph from the /extract endpoint...</p>
     </header>
     <main>
-      <div id="graph"></div>
+      <div class="graph-container">
+        <div id="graph"></div>
+        <div class="graph-filter">
+          <label for="graph-filter-input">Filter</label>
+          <input id="graph-filter-input" type="search" placeholder="Filter nodes by label..." aria-label="Filter graph nodes" />
+        </div>
+      </div>
       <aside class="sidebar">
         <h2 id="sidebar-title">No node selected</h2>
         <div id="node-details"><p>Select a node to view details.</p></div>
@@ -24,6 +30,7 @@
       const status = document.querySelector('.status');
       const sidebarTitle = document.getElementById('sidebar-title');
       const details = document.getElementById('node-details');
+      const filterInput = document.getElementById('graph-filter-input');
 
       const BASE_NODE_SIZE = 10;
 
@@ -134,6 +141,31 @@
         return BASE_NODE_SIZE + (occurrences.length * 2);
       }
 
+      function resetSidebar() {
+        sidebarTitle.textContent = 'No node selected';
+        details.innerHTML = '<p>Select a node to view details.</p>';
+      }
+
+      function filterGraph(cy, filterTerm) {
+        cy.nodes().forEach((node) => {
+          const label = node.data('label');
+          const shouldShowNode =
+            !filterTerm || label.toLowerCase().includes(filterTerm);
+
+          if (shouldShowNode) {
+            node.show();
+          } else {
+            node.hide();
+          }
+        });
+
+        const selectedNodes = cy.$('node:selected');
+        if (selectedNodes.every((node) => node.hidden())) {
+          selectedNodes.unselect();
+          resetSidebar();
+        }
+      }
+
       async function loadGraph() {
         try {
           const response = await fetch('/graph-viewmodel?run_path={{ run_path }}');
@@ -223,14 +255,19 @@
             }
           });
 
+          filterInput.addEventListener('input', (event) => {
+            const filterTerm = event.target.value.trim().toLowerCase();
+
+            filterGraph(cy, filterTerm);
+          });
+
           cy.on('select', 'node', (event) => {
             renderNodeDetails(event.target);
           });
 
           cy.on('tap', (event) => {
             if (event.target === cy) {
-              sidebarTitle.textContent = 'No node selected';
-              details.innerHTML = '<p>Select a node to view details.</p>';
+              resetSidebar();
             }
           });
         } catch (error) {
