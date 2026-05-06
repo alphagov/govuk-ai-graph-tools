@@ -53,7 +53,6 @@ tr:hover {
   width: 100%;
   max-width: 400px;
   padding: 10px;
-  margin-bottom: 20px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 1rem;
@@ -61,6 +60,9 @@ tr:hover {
 .loading {
   color: #6b7280;
   font-style: italic;
+}
+.error-message {
+  color: red;
 }
 .btn {
   padding: 8px 16px;
@@ -78,4 +80,99 @@ tr:hover {
 .btn:disabled {
   background-color: #93c5fd;
   cursor: not-allowed;
+}
+
+/* Layout & Container Styles */
+.header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.header-container h1 {
+  margin: 0;
+}
+.search-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+/* Table Specific Styles */
+.checkbox-col {
+  width: 40px;
+}
+.row-expanded {
+  background-color: #f3f4f6;
+}
+.row-collapsed {
+  background-color: white;
+}
+.row-alias {
+  background-color: #fafafa;
+}
+.expand-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin-right: 8px;
+  width: 20px;
+  text-align: center;
+}
+.alias-count {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-left: 8px;
+}
+.empty-cell {
+  color: #9ca3af;
+}
+.id-cell {
+  color: #6b7280;
+  font-size: 0.875rem;
+  word-break: break-all;
+}
+.alias-checkbox {
+  margin-left: 12px;
+}
+.alias-label-cell {
+  padding-left: 40px;
+}
+.alias-arrow {
+  color: #9ca3af;
+  margin-right: 8px;
+}
+
+/* Pagination Styles */
+.pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+  font-size: 0.875rem;
+}
+.pagination-info {
+  color: #6b7280;
+}
+.pagination-controls {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.page-btn {
+  padding: 5px 10px;
+}
+.page-btn:enabled {
+  cursor: pointer;
+}
+.page-btn:disabled {
+  cursor: not-allowed;
+}
+.page-text {
+  padding: 0 10px;
+  font-weight: 500;
+}
+.page-select {
+  padding: 5px;
+  border-radius: 4px;
 }
