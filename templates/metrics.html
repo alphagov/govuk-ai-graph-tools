@@ -4,89 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Metrics Dashboard (React CDN Sample)</title>
-    <style>
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        margin: 0;
-        padding: 20px;
-        background-color: #f3f4f6;
-        color: #111827;
-      }
-      h1 {
-        font-size: 1.5rem;
-        margin-bottom: 20px;
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        background: white;
-        border-radius: 8px;
-        overflow: hidden;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-      }
-      th, td {
-        padding: 12px 16px;
-        text-align: left;
-        border-bottom: 1px solid #e5e7eb;
-      }
-      th {
-        background-color: #f9fafb;
-        font-weight: 600;
-        color: #374151;
-      }
-      tr:last-child td {
-        border-bottom: none;
-      }
-      tr:hover {
-        background-color: #f9fafb;
-      }
-      .badge {
-        display: inline-block;
-        padding: 2px 8px;
-        border-radius: 9999px;
-        font-size: 0.75rem;
-        font-weight: 500;
-        text-transform: capitalize;
-      }
-      .badge.entity {
-        background-color: #dbeafe;
-        color: #1e40af;
-      }
-      .badge.alias {
-        background-color: #fef3c7;
-        color: #b45309;
-      }
-      .search-bar {
-        width: 100%;
-        max-width: 400px;
-        padding: 10px;
-        margin-bottom: 20px;
-        border: 1px solid #d1d5db;
-        border-radius: 6px;
-        font-size: 1rem;
-      }
-      .loading {
-        color: #6b7280;
-        font-style: italic;
-      }
-      .btn {
-        padding: 8px 16px;
-        background-color: #2563eb;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        font-weight: 500;
-        transition: background-color 0.2s;
-      }
-      .btn:hover:not(:disabled) {
-        background-color: #1d4ed8;
-      }
-      .btn:disabled {
-        background-color: #93c5fd;
-        cursor: not-allowed;
-      }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/metrics.css') }}" />
   </head>
   <body>
     <!-- The DOM element where React will mount -->
@@ -239,13 +157,13 @@
         const paginatedNodes = filteredEntities.slice(startIndex, startIndex + pageSize);
 
         if (loading) return <p className="loading">Loading metrics data...</p>;
-        if (error) return <p style={{ color: 'red' }}>Error: {error}</p>;
+        if (error) return <p className="error-message">Error: {error}</p>;
         if (!data || data.length === 0) return <p>No graph nodes found.</p>;
 
         return (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h1 style={{ margin: 0 }}>Node Metrics ({filteredEntities.length} entities)</h1>
+            <div className="header-container">
+              <h1>Node Metrics ({filteredEntities.length} entities)</h1>
               <button 
                 className="btn" 
                 disabled={selectedItems.size === 0} 
@@ -255,11 +173,10 @@
               </button>
             </div>
             
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+            <div className="search-container">
               <input
                 type="text"
                 className="search-bar"
-                style={{ marginBottom: 0 }}
                 placeholder="Search by label or alias..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -269,7 +186,7 @@
             <table>
               <thead>
                 <tr>
-                  <th style={{ width: '40px' }}>
+                  <th className="checkbox-col">
                     <input 
                       type="checkbox"
                       checked={filteredEntities.length > 0 && paginatedNodes.every(e => selectedItems.has(e.data.id))}
@@ -304,7 +221,7 @@
                   
                   // Entity Row
                   rows.push(
-                    <tr key={item.id} style={{ background: isExpanded ? '#f3f4f6' : 'white' }}>
+                    <tr key={item.id} className={isExpanded ? 'row-expanded' : 'row-collapsed'}>
                       <td>
                         <input 
                           type="checkbox" 
@@ -320,20 +237,20 @@
                             else next.add(item.id);
                             setExpandedEntities(next);
                           }}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', marginRight: '8px', width: '20px', textAlign: 'center' }}
+                          className="expand-btn"
                         >
                           {isExpanded ? '▼' : '▶'}
                         </button>
                         <strong>{item.label}</strong>
-                        {entity.aliases.length > 0 && <span style={{ color: '#6b7280', fontSize: '0.875rem', marginLeft: '8px' }}>({entity.aliases.length} aliases)</span>}
+                        {entity.aliases.length > 0 && <span className="alias-count">({entity.aliases.length} aliases)</span>}
                       </td>
                       <td>
                         <span className="badge entity">
                           {item.type}
                         </span>
                       </td>
-                      <td style={{ color: '#9ca3af' }}>-</td>
-                      <td style={{ color: '#6b7280', fontSize: '0.875rem', wordBreak: 'break-all' }}>{item.id}</td>
+                      <td className="empty-cell">-</td>
+                      <td className="id-cell">{item.id}</td>
                     </tr>
                   );
 
@@ -343,17 +260,17 @@
                       const aliasData = alias.data;
                       const aCount = aliasData.occurrences ? aliasData.occurrences.length : 0;
                       rows.push(
-                        <tr key={aliasData.id} style={{ background: '#fafafa' }}>
+                        <tr key={aliasData.id} className="row-alias">
                           <td>
                             <input 
                               type="checkbox" 
                               checked={selectedItems.has(aliasData.id)} 
                               onChange={() => toggleSelectAlias(aliasData.id, item.id)} 
-                              style={{ marginLeft: '12px' }}
+                              className="alias-checkbox"
                             />
                           </td>
-                          <td style={{ paddingLeft: '40px' }}>
-                            <span style={{ color: '#9ca3af', marginRight: '8px' }}>↳</span>
+                          <td className="alias-label-cell">
+                            <span className="alias-arrow">↳</span>
                             {aliasData.label}
                           </td>
                           <td>
@@ -362,7 +279,7 @@
                             </span>
                           </td>
                           <td>{aCount} occurrence{aCount !== 1 && 's'}</td>
-                          <td style={{ color: '#6b7280', fontSize: '0.875rem', wordBreak: 'break-all' }}>{aliasData.id}</td>
+                          <td className="id-cell">{aliasData.id}</td>
                         </tr>
                       );
                     });
@@ -375,32 +292,32 @@
             
             {/* Pagination Controls */}
             {filteredEntities.length > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', fontSize: '0.875rem' }}>
-                <div style={{ color: '#6b7280' }}>
+              <div className="pagination-container">
+                <div className="pagination-info">
                   Showing {startIndex + 1} to {Math.min(startIndex + pageSize, filteredEntities.length)} of {filteredEntities.length} entities
                 </div>
-                <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+                <div className="pagination-controls">
                   <button 
+                    className="page-btn"
                     disabled={currentPage === 1} 
                     onClick={() => setCurrentPage(prev => prev - 1)}
-                    style={{ padding: '5px 10px', cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
                   >
                     Previous
                   </button>
-                  <span style={{ padding: '0 10px', fontWeight: 500 }}>Page {currentPage} of {totalPages || 1}</span>
+                  <span className="page-text">Page {currentPage} of {totalPages || 1}</span>
                   <button 
+                    className="page-btn"
                     disabled={currentPage >= totalPages} 
                     onClick={() => setCurrentPage(prev => prev + 1)}
-                    style={{ padding: '5px 10px', cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer' }}
                   >
                     Next
                   </button>
                 </div>
                 <div>
                   <select 
+                    className="page-select"
                     value={pageSize} 
                     onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }} 
-                    style={{ padding: '5px', borderRadius: '4px' }}
                   >
                     <option value={10}>10 per page</option>
                     <option value={20}>20 per page</option>
