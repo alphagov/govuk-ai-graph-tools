@@ -27,13 +27,28 @@
 
       const BASE_NODE_SIZE = 10;
 
-      function escapeHtml(value) {
-        return String(value || '')
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#39;');
+      function isNodeInViewport(node) {
+        const nodeBoundingBox = node.renderedBoundingBox();
+        const container = node.cy().container();
+
+        const viewportWidth = container.clientWidth;
+        const viewportHeight = container.clientHeight;
+
+        return !(
+          nodeBoundingBox.x1 < 0 ||
+          nodeBoundingBox.x2 > viewportWidth ||
+          nodeBoundingBox.y1 < 0 ||
+          nodeBoundingBox.y2 > viewportHeight
+        );
+      }
+
+      function ensureNodeInView(node) {
+        if (!isNodeInViewport(node)) {
+          node.cy().animate({
+            center: { eles: node },
+            duration: 500
+          });
+        }
       }
 
       function renderEntityDetails(node) {
@@ -42,18 +57,34 @@
         const aliasEdges = node.connectedEdges('edge[edge_type="alias"]');
         const aliasNodes = aliasEdges.connectedNodes('node[type="alias"]');
         const aliasCount = aliasNodes.length;
+
         sidebarTitle.textContent =
           data.label
           + ` (${aliasCount} alias${aliasCount !== 1 ? 'es' : ''})`;
-        
+
         if (aliasCount === 0) {
           details.innerHTML = '<p>No aliases available.</p>';
         } else {
           const aliasList = aliasNodes.map(aliasNode => {
             const aliasLabel = aliasNode.data('label');
-            return `<li>${escapeHtml(aliasLabel)}</li>`;
+            return `<li><a href="#" data-alias-id="${aliasNode.id()}">${aliasLabel}</a></li>`;
           }).join('');
           details.innerHTML = `<ul>${aliasList}</ul>`;
+
+          document.querySelectorAll('#node-details li a[data-alias-id]').forEach(item => {
+            item.addEventListener('click', (e) => {
+              const aliasId = e.target.getAttribute('data-alias-id');
+              if (aliasId) {
+                const cy = node.cy();
+                const aliasNode = cy.getElementById(aliasId);
+                if (aliasNode.length > 0) {
+                  cy.elements().unselect();
+                  aliasNode.select();
+                  ensureNodeInView(aliasNode);
+                }
+              }
+            });
+          });
         }
       }
 
@@ -70,11 +101,10 @@
         }
         else {
           details.innerHTML = occurrences.map(item => {
-            const link = escapeHtml(item.link);
             const context = item.context;
             return `
               <section>
-                <p><a href="${link}" target="_blank" rel="noopener noreferrer">View on GOV.UK</a></p>
+                <p><a href="${item.link}" target="_blank" rel="noopener noreferrer">View on GOV.UK</a></p>
                 <p>${context}</p>
               </section>
             `;
@@ -178,8 +208,8 @@
               {
                 selector: ':selected',
                 style: {
-                  'border-width': 0.5,
-                  'border-color': '#10b981'
+                  'border-width': 1.5,
+                  'border-color': '#ffdd00'
                 }
               }
             ],
@@ -193,7 +223,7 @@
             }
           });
 
-          cy.on('tap', 'node', (event) => {
+          cy.on('select', 'node', (event) => {
             renderNodeDetails(event.target);
           });
 
