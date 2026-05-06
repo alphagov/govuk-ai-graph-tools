@@ -388,3 +388,62 @@ tr.selected td:first-child {
   font-weight: 600;
 }
 
+
+/* Utility & Layout Classes extracted from inline styles */
+.error-text { color: #dc2626; }
+.text-center { text-align: center; }
+.col-checkbox { width: 40px; text-align: center; }
+.col-sortable { cursor: pointer; user-select: none; }
+.sort-icon-inactive { opacity: 0.3; margin-left: 4px; }
+.sort-icon-active { margin-left: 4px; }
+.filter-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.filter-input {
+  border: none;
+  outline: none;
+  font-size: 0.875rem;
+  width: 150px;
+}
+.filter-remove-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #dc2626;
+}
+.alias-more-count {
+  font-size: 0.75rem;
+  color: #6b7280;
+  align-self: center;
+}
+.empty-state-row {
+  text-align: center;
+  padding: 32px;
+  color: #6b7280;
+}
+.page-select {
+  width: auto;
+  padding: 6px;
+  font-size: 0.875rem;
+}
+.scrollable-content {
+  overflow-y: auto;
+}
+.empty-state-text {
+  padding: 16px;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+.empty-state-text-minimal {
+  color: #6b7280;
+}
+.empty-state-text-padded {
+  color: #6b7280;
+  padding: 16px;
+}

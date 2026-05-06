@@ -228,7 +228,7 @@
         const paginatedEntities = sortedEntities.slice(startIndex, startIndex + pageSize);
 
         if (loading) return <div className="loading-overlay">Loading metrics data...</div>;
-        if (error) return <div className="loading-overlay" style={{color: 'red'}}>Error: {error}</div>;
+        if (error) return <div className="loading-overlay" className="error-text">Error: {error}</div>;
 
         const selectedEntity = entities.find(e => e.data.id === selectedEntityId);
         const selectedAlias = selectedEntity?.aliases.find(a => a.data.id === selectedAliasId);
@@ -243,8 +243,8 @@
         };
         
         const renderSortIcon = (key) => {
-          if (!sortConfig || sortConfig.key !== key) return <span style={{ opacity: 0.3, marginLeft: '4px' }}>↕</span>;
-          return <span style={{ marginLeft: '4px' }}>{sortConfig.direction === 'asc' ? '▲' : '▼'}</span>;
+          if (!sortConfig || sortConfig.key !== key) return <span className="sort-icon-inactive">↕</span>;
+          return <span className="sort-icon-active">{sortConfig.direction === 'asc' ? '▲' : '▼'}</span>;
         };
 
         return (
@@ -285,15 +285,15 @@
             <div className="filters-bar">
               FILTERS
               {filters.slice(1).map((filterVal, index) => (
-                <div key={index + 1} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'white', border: '1px solid #e5e7eb', padding: '2px 8px', borderRadius: '4px' }}>
+                <div key={index + 1} className="filter-pill">
                   <input 
                     type="text" 
                     value={filterVal} 
                     onChange={e => updateFilter(index + 1, e.target.value)} 
-                    style={{ border: 'none', outline: 'none', fontSize: '0.875rem', width: '150px' }} 
+                    className="filter-input" 
                     placeholder="Search query..."
                   />
-                  <button onClick={() => removeFilter(index + 1)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626' }}>×</button>
+                  <button onClick={() => removeFilter(index + 1)} className="filter-remove-btn">×</button>
                 </div>
               ))}
               <button className="add-filter-btn" onClick={addFilter}>+ Add filter</button>
@@ -304,7 +304,7 @@
               <table className="metrics-table">
                 <thead>
                   <tr>
-                    <th style={{ width: '40px', textAlign: 'center' }}>
+                    <th className="col-checkbox">
                       <input 
                         type="checkbox" 
                         checked={paginatedEntities.length > 0 && paginatedEntities.every(e => checkedEntityIds.has(e.data.id))}
@@ -319,19 +319,19 @@
                         }}
                       />
                     </th>
-                    <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('entity')}>
+                    <th className="col-sortable" onClick={() => handleSort('entity')}>
                       ENTITY {renderSortIcon('entity')}
                     </th>
-                    <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('category')}>
+                    <th className="col-sortable" onClick={() => handleSort('category')}>
                       CATEGORY {renderSortIcon('category')}
                     </th>
-                    <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('aliases')}>
+                    <th className="col-sortable" onClick={() => handleSort('aliases')}>
                       ALIASES {renderSortIcon('aliases')}
                     </th>
-                    <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('aliasCount')}>
+                    <th className="col-sortable" onClick={() => handleSort('aliasCount')}>
                       ALIAS COUNT {renderSortIcon('aliasCount')}
                     </th>
-                    <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('occurrences')}>
+                    <th className="col-sortable" onClick={() => handleSort('occurrences')}>
                       OCCURRENCES {renderSortIcon('occurrences')}
                     </th>
                   </tr>
@@ -346,7 +346,7 @@
                         className={isSelected ? 'selected' : ''}
                         onClick={() => setSelectedEntityId(isSelected ? null : entity.data.id)}
                       >
-                        <td style={{ textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+                        <td className="text-center" onClick={e => e.stopPropagation()}>
                           <input 
                             type="checkbox" 
                             checked={checkedEntityIds.has(entity.data.id)}
@@ -374,18 +374,18 @@
                               <span key={idx} className="badge badge-alias">{alias.data.label}</span>
                             ))}
                             {entity.aliases.length > 3 && (
-                              <span style={{ fontSize: '0.75rem', color: '#6b7280', alignSelf: 'center' }}>+{entity.aliases.length - 3} more</span>
+                              <span className="alias-more-count">+{entity.aliases.length - 3} more</span>
                             )}
                           </div>
                         </td>
-                        <td style={{ textAlign: 'center' }}>{entity.aliasCount}</td>
-                        <td style={{ textAlign: 'center' }}>{entity.totalOccurrences}</td>
+                        <td className="text-center">{entity.aliasCount}</td>
+                        <td className="text-center">{entity.totalOccurrences}</td>
                       </tr>
                     );
                   })}
                   {paginatedEntities.length === 0 && (
                     <tr>
-                      <td colSpan="4" style={{ textAlign: 'center', padding: '32px', color: '#6b7280' }}>
+                      <td colSpan="4" className="empty-state-row">
                         No entities match the current filters.
                       </td>
                     </tr>
@@ -420,7 +420,7 @@
                 <div>
                   <select 
                     className="search-bar"
-                    style={{width: 'auto', padding: '6px', fontSize: '0.875rem'}}
+                    className="page-select"
                     value={pageSize} 
                     onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }} 
                   >
@@ -437,7 +437,7 @@
               <div className="detail-pane">
                 <div className="detail-sidebar">
                   <div className="detail-header">Aliases</div>
-                  <div className="detail-content" style={{ overflowY: 'auto' }}>
+                  <div className="detail-content" className="scrollable-content">
                     {selectedEntity.aliases.map(alias => (
                       <div 
                         key={alias.data.id} 
@@ -449,7 +449,7 @@
                       </div>
                     ))}
                     {selectedEntity.aliases.length === 0 && (
-                      <div style={{ padding: '16px', color: '#6b7280', fontSize: '0.875rem' }}>No aliases found.</div>
+                      <div className="empty-state-text">No aliases found.</div>
                     )}
                   </div>
                 </div>
@@ -471,11 +471,11 @@
                           </div>
                         ))}
                         {occurrencesForAlias.length === 0 && (
-                          <div style={{ color: '#6b7280' }}>No occurrences found for this alias.</div>
+                          <div className="empty-state-text-minimal">No occurrences found for this alias.</div>
                         )}
                       </div>
                     ) : (
-                      <div style={{ color: '#6b7280', padding: '16px' }}>Select an alias to view occurrences.</div>
+                      <div className="empty-state-text-padded">Select an alias to view occurrences.</div>
                     )}
                   </div>
                 </div>
