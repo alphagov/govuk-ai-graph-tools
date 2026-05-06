@@ -82,17 +82,21 @@
           }).join('');
           details.innerHTML = `<ul>${aliasList}</ul>`;
 
+          function switchSelectedNode(nodeIdToSelect) {
+            const cy = node.cy();
+            const nodeToSelect = cy.getElementById(nodeIdToSelect);
+            if (nodeToSelect.length > 0) {
+              cy.elements().unselect();
+              nodeToSelect.select();
+              ensureNodeInView(nodeToSelect);
+            }
+          }
+
           document.querySelectorAll('#node-details li a[data-alias-id]').forEach(item => {
             item.addEventListener('click', (e) => {
               const aliasId = e.target.getAttribute('data-alias-id');
               if (aliasId) {
-                const cy = node.cy();
-                const aliasNode = cy.getElementById(aliasId);
-                if (aliasNode.length > 0) {
-                  cy.elements().unselect();
-                  aliasNode.select();
-                  ensureNodeInView(aliasNode);
-                }
+                switchSelectedNode(aliasId);
               }
             });
           });
