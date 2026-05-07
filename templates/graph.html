@@ -181,7 +181,11 @@
           selectedNodes.unselect();
           resetSidebar();
         }
-        fitViewToNodes(cy.nodes(':visible'));
+
+
+        if (filterTerm !== '') {
+          fitViewToNodes(cy.nodes(':visible'));
+        }
       }
 
       async function loadGraph() {
