@@ -1,27 +1,21 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Visualisations</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/graph.css') }}" />
-  </head>
-  <body>
-    <header>
-      <h1>Visualisations</h1>
-    </header>
-    <main>
-      {% if visualisations %}
-      <ul class="visualisation-list">
-        {% for v in visualisations %}
-        <li>
-          <a href="{{ url_for('graph_page', run_path=v.run_path) }}">{{ v.run_path }}</a>
-        </li>
-        {% endfor %}
-      </ul>
-      {% else %}
-      <p>There are no visualisations to show</p>
-      {% endif %}
-    </main>
-  </body>
-</html>
+{% extends 'base.html' %}
+
+{% block title %}Visualisations{% endblock %}
+
+{% block content %}
+<div>
+  <h1>Visualisations</h1>
+
+  {% if visualisations %}
+  <ul class="visualisation-list">
+    {% for v in visualisations %}
+    <li>
+      <a href="{{ url_for('graph_page', run_path=v.run_path) }}">{{ v.run_path }}</a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>There are no visualisations to show</p>
+  {% endif %}
+</div>
+{% endblock %}

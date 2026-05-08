@@ -1,307 +1,298 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Graph Viewer</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/graph.css') }}" />
-  </head>
-  <body>
-    <header>
-      <h1>Graph Viewer</h1>
-      <p class="status">Loading graph from the /extract endpoint...</p>
-    </header>
-    <main>
-      <div class="graph-container">
-        <div id="graph"></div>
-        <div class="graph-filter">
-          <label for="graph-filter-input">Filter</label>
-          <input id="graph-filter-input" type="search" placeholder="Filter nodes by label..." aria-label="Filter graph nodes" />
-        </div>
-      </div>
-      <aside class="sidebar">
-        <h2 id="sidebar-title">No node selected</h2>
-        <div id="node-details"><p>Select a node to view details.</p></div>
-      </aside>
-    </main>
+{% extends 'base.html' %}
 
-    <script src="https://unpkg.com/cytoscape@3.4.0/dist/cytoscape.min.js"></script>
-    <script>
-      const status = document.querySelector('.status');
-      const sidebarTitle = document.getElementById('sidebar-title');
-      const details = document.getElementById('node-details');
-      const filterInput = document.getElementById('graph-filter-input');
+{% block title %}Graph viewer{% endblock %}
 
-      const BASE_NODE_SIZE = 10;
+{% block extra_head %}
+<script src="https://unpkg.com/cytoscape@3.4.0/dist/cytoscape.min.js"></script>
+{% endblock %}
 
-      function isNodeInViewport(node) {
-        const nodeBoundingBox = node.renderedBoundingBox();
-        const container = node.cy().container();
+{% block content %}
+<div class="graph-container">
+  <div id="graph"></div>
+  <div class="graph-filter">
+    <label for="graph-filter-input">Filter</label>
+    <input id="graph-filter-input" type="search" placeholder="Filter nodes by label..." aria-label="Filter graph nodes" />
+  </div>
+</div>
+<aside class="sidebar">
+  <h2 id="sidebar-title">No node selected</h2>
+  <div id="node-details"><p>Select a node to view details.</p></div>
+</aside>
+{% endblock %}
 
-        const viewportWidth = container.clientWidth;
-        const viewportHeight = container.clientHeight;
+{% block scripts %}
+<script>
+  const status = document.querySelector('.status');
+  const sidebarTitle = document.getElementById('sidebar-title');
+  const details = document.getElementById('node-details');
+  const filterInput = document.getElementById('graph-filter-input');
 
-        return !(
-          nodeBoundingBox.x1 < 0 ||
-          nodeBoundingBox.x2 > viewportWidth ||
-          nodeBoundingBox.y1 < 0 ||
-          nodeBoundingBox.y2 > viewportHeight
-        );
-      }
+  const BASE_NODE_SIZE = 10;
 
-      function ensureNodeInView(node) {
-        if (node.hidden()) {
-          return;
-        }
+  function isNodeInViewport(node) {
+    const nodeBoundingBox = node.renderedBoundingBox();
+    const container = node.cy().container();
 
-        if (!isNodeInViewport(node)) {
-          node.cy().animate({
-            center: { eles: node },
-            duration: 500
-          });
-        }
-      }
+    const viewportWidth = container.clientWidth;
+    const viewportHeight = container.clientHeight;
 
-      function fitViewToNodes(nodes) {
-        if (nodes.length > 0) {
-          nodes.cy().animate({
-            fit: { eles: nodes },
-            duration: 500,
-          });
-        }
-      }
+    return !(
+      nodeBoundingBox.x1 < 0 ||
+      nodeBoundingBox.x2 > viewportWidth ||
+      nodeBoundingBox.y1 < 0 ||
+      nodeBoundingBox.y2 > viewportHeight
+    );
+  }
 
-      function renderEntityDetails(node) {
-        const data = node.data();
+  function ensureNodeInView(node) {
+    if (node.hidden()) {
+      return;
+    }
 
-        const aliasEdges = node.connectedEdges('edge[edge_type="alias"]');
-        const aliasNodes = aliasEdges.connectedNodes('node[type="alias"]');
-        const aliasCount = aliasNodes.length;
+    if (!isNodeInViewport(node)) {
+      node.cy().animate({
+        center: { eles: node },
+        duration: 500
+      });
+    }
+  }
 
-        sidebarTitle.textContent =
-          data.label
-          + ` (${aliasCount} alias${aliasCount !== 1 ? 'es' : ''})`;
+  function fitViewToNodes(nodes) {
+    if (nodes.length > 0) {
+      nodes.cy().animate({
+        fit: { eles: nodes },
+        duration: 500,
+      });
+    }
+  }
 
-        if (aliasCount === 0) {
-          details.innerHTML = '<p>No aliases available.</p>';
-        } else {
-          const aliasList = aliasNodes.map(aliasNode => {
-            const aliasLabel = aliasNode.data('label');
-            return `<li><a href="#" data-alias-id="${aliasNode.id()}">${aliasLabel}</a></li>`;
-          }).join('');
-          details.innerHTML = `<ul>${aliasList}</ul>`;
+  function renderEntityDetails(node) {
+    const data = node.data();
 
-          function switchSelectedNode(nodeIdToSelect) {
-            const cy = node.cy();
-            const nodeToSelect = cy.getElementById(nodeIdToSelect);
-            if (nodeToSelect.length > 0) {
-              cy.elements().unselect();
-              nodeToSelect.select();
-              ensureNodeInView(nodeToSelect);
-            }
-          }
+    const aliasEdges = node.connectedEdges('edge[edge_type="alias"]');
+    const aliasNodes = aliasEdges.connectedNodes('node[type="alias"]');
+    const aliasCount = aliasNodes.length;
 
-          document.querySelectorAll('#node-details li a[data-alias-id]').forEach(item => {
-            item.addEventListener('click', (e) => {
-              const aliasId = e.target.getAttribute('data-alias-id');
-              if (aliasId) {
-                switchSelectedNode(aliasId);
-              }
-            });
-          });
+    sidebarTitle.textContent =
+      data.label
+      + ` (${aliasCount} alias${aliasCount !== 1 ? 'es' : ''})`;
+
+    if (aliasCount === 0) {
+      details.innerHTML = '<p>No aliases available.</p>';
+    } else {
+      const aliasList = aliasNodes.map(aliasNode => {
+        const aliasLabel = aliasNode.data('label');
+        return `<li><a href="#" data-alias-id="${aliasNode.id()}">${aliasLabel}</a></li>`;
+      }).join('');
+      details.innerHTML = `<ul>${aliasList}</ul>`;
+
+      function switchSelectedNode(nodeIdToSelect) {
+        const cy = node.cy();
+        const nodeToSelect = cy.getElementById(nodeIdToSelect);
+        if (nodeToSelect.length > 0) {
+          cy.elements().unselect();
+          nodeToSelect.select();
+          ensureNodeInView(nodeToSelect);
         }
       }
 
-      function renderAliasDetails(node) {
-        const data = node.data();
-        const occurrences = Array.isArray(data.occurrences) ? data.occurrences : [];
-
-        sidebarTitle.textContent =
-          data.label
-          + ` (${occurrences.length} occurrence${occurrences.length !== 1 ? 's' : ''})`;
-
-        if (occurrences.length === 0) {
-          details.innerHTML = '<p>No occurrences available.</p>';
-        }
-        else {
-          details.innerHTML = occurrences.map(item => {
-            const context = item.context;
-            return `
-              <section>
-                <p><a href="${item.link}" target="_blank" rel="noopener noreferrer">View on GOV.UK</a></p>
-                <p>${context}</p>
-              </section>
-            `;
-          }).join('');
-        }
-      }
-
-      function renderNodeDetails(node) {
-        const data = node.data();
-        if (data.type === 'entity') {
-          renderEntityDetails(node);
-        }
-        else if (data.type === 'alias') {
-          renderAliasDetails(node);
-        }
-      }
-
-      function calculateEntityNodeSize(node) {
-        const data = node.data();
-        const aliasCount = node.connectedEdges('edge[edge_type="alias"]').length;
-        return BASE_NODE_SIZE + aliasCount * 2;
-      }
-
-      function calculateAliasNodeSize(node) {
-        const data = node.data();
-        const occurrences = Array.isArray(data.occurrences) ? data.occurrences : [];
-        return BASE_NODE_SIZE + (occurrences.length * 2);
-      }
-
-      function resetSidebar() {
-        sidebarTitle.textContent = 'No node selected';
-        details.innerHTML = '<p>Select a node to view details.</p>';
-      }
-
-      function filterGraph(cy, filterTerm) {
-        cy.nodes().forEach((node) => {
-          const label = node.data('label');
-          const shouldShowNode =
-            !filterTerm || label.toLowerCase().includes(filterTerm);
-
-          if (shouldShowNode) {
-            node.show();
-          } else {
-            node.hide();
+      document.querySelectorAll('#node-details li a[data-alias-id]').forEach(item => {
+        item.addEventListener('click', (e) => {
+          const aliasId = e.target.getAttribute('data-alias-id');
+          if (aliasId) {
+            switchSelectedNode(aliasId);
           }
         });
+      });
+    }
+  }
 
-        const selectedNodes = cy.$('node:selected');
-        if (selectedNodes.every((node) => node.hidden())) {
-          selectedNodes.unselect();
+  function renderAliasDetails(node) {
+    const data = node.data();
+    const occurrences = Array.isArray(data.occurrences) ? data.occurrences : [];
+
+    sidebarTitle.textContent =
+      data.label
+      + ` (${occurrences.length} occurrence${occurrences.length !== 1 ? 's' : ''})`;
+
+    if (occurrences.length === 0) {
+      details.innerHTML = '<p>No occurrences available.</p>';
+    }
+    else {
+      details.innerHTML = occurrences.map(item => {
+        const context = item.context;
+        return `
+          <section>
+            <p><a href="${item.link}" target="_blank" rel="noopener noreferrer">View on GOV.UK</a></p>
+            <p>${context}</p>
+          </section>
+        `;
+      }).join('');
+    }
+  }
+
+  function renderNodeDetails(node) {
+    const data = node.data();
+    if (data.type === 'entity') {
+      renderEntityDetails(node);
+    }
+    else if (data.type === 'alias') {
+      renderAliasDetails(node);
+    }
+  }
+
+  function calculateEntityNodeSize(node) {
+    const data = node.data();
+    const aliasCount = node.connectedEdges('edge[edge_type="alias"]').length;
+    return BASE_NODE_SIZE + aliasCount * 2;
+  }
+
+  function calculateAliasNodeSize(node) {
+    const data = node.data();
+    const occurrences = Array.isArray(data.occurrences) ? data.occurrences : [];
+    return BASE_NODE_SIZE + (occurrences.length * 2);
+  }
+
+  function resetSidebar() {
+    sidebarTitle.textContent = 'No node selected';
+    details.innerHTML = '<p>Select a node to view details.</p>';
+  }
+
+  function filterGraph(cy, filterTerm) {
+    cy.nodes().forEach((node) => {
+      const label = node.data('label');
+      const shouldShowNode =
+        !filterTerm || label.toLowerCase().includes(filterTerm);
+
+      if (shouldShowNode) {
+        node.show();
+      } else {
+        node.hide();
+      }
+    });
+
+    const selectedNodes = cy.$('node:selected');
+    if (selectedNodes.every((node) => node.hidden())) {
+      selectedNodes.unselect();
+      resetSidebar();
+    }
+
+
+    if (filterTerm !== '') {
+      fitViewToNodes(cy.nodes(':visible'));
+    }
+  }
+
+  async function loadGraph() {
+    try {
+      const response = await fetch('/graph-viewmodel?run_path={{ run_path }}');
+      if (!response.ok) {
+        throw new Error(`Failed to load graph: ${response.status} ${response.statusText}`);
+      }
+
+      const graphData = await response.json();
+
+      const cy = cytoscape({
+        container: document.getElementById('graph'),
+        boxSelectionEnabled: false,
+        elements: graphData,
+        style: [
+          {
+            selector: 'node',
+            style: {
+              'text-valign': 'center',
+              'text-halign': 'right',
+              'text-margin-x': 1,
+              'shape': 'ellipse',
+              'label': 'data(label)',
+              'color': '#0b0c0c',
+              'font-size': 3,
+            }
+          },
+          {
+            selector: 'node[type="entity"]',
+            style: {
+              'background-color': '#1d70b8',
+              'width': calculateEntityNodeSize,
+              'height': calculateEntityNodeSize,
+            }
+          },
+          {
+            selector: 'node[type="alias"]',
+            style: {
+              'background-color': '#f47738',
+              'width': calculateAliasNodeSize,
+              'height': calculateAliasNodeSize,
+            }
+          },
+          {
+            selector: 'edge',
+            style: {
+              'width': 0.5,
+              'target-arrow-shape': 'vee',
+              'color': '#0b0c0c',
+              'curve-style': 'bezier',
+              'text-rotation': 'autorotate',
+            }
+          },
+          {
+            selector: 'edge[edge_type="alias"]',
+            style: {
+              'line-color': '#9ca3af',
+              'target-arrow-color': '#9ca3af',
+            }
+          },
+          {
+            selector: 'edge[edge_type="relationship"]',
+            style: {
+              'label': 'data(label)',
+              'font-size': 3,
+              'line-color': '#a395db',
+              'line-style': 'dashed',
+              'target-arrow-color': '#a395db',
+            }
+          },
+          {
+            selector: ':selected',
+            style: {
+              'border-width': 1.5,
+              'border-color': '#ffdd00',
+            }
+          }
+        ],
+        layout: {
+          name: 'cose',
+          fit: true,
+          nodeDimensionsIncludeLabels: true,
+          componentSpacing: 200,
+          nodeRepulsion: function( node ) { return 2000; },
+          nodeOverlap: 1,
+        }
+      });
+
+      let filterUpdateTimeout;
+      filterInput.addEventListener('input', (event) => {
+        const filterTerm = event.target.value.trim().toLowerCase();
+        
+        clearTimeout(filterUpdateTimeout);
+        filterUpdateTimeout = setTimeout(() => { filterGraph(cy, filterTerm); }, 500);
+      });
+
+      cy.on('select', 'node', (event) => {
+        renderNodeDetails(event.target);
+      });
+
+      cy.on('tap', (event) => {
+        if (event.target === cy) {
           resetSidebar();
         }
+      });
+    } catch (error) {
+      details.textContent = 'Unable to display graph.';
+      console.error(error);
+    }
+  }
 
-
-        if (filterTerm !== '') {
-          fitViewToNodes(cy.nodes(':visible'));
-        }
-      }
-
-      async function loadGraph() {
-        try {
-          const response = await fetch('/graph-viewmodel?run_path={{ run_path }}');
-          if (!response.ok) {
-            throw new Error(`Failed to load graph: ${response.status} ${response.statusText}`);
-          }
-
-          const graphData = await response.json();
-
-          status.textContent = 'Graph loaded successfully.';
-
-          const cy = cytoscape({
-            container: document.getElementById('graph'),
-            boxSelectionEnabled: false,
-            elements: graphData,
-            style: [
-              {
-                selector: 'node',
-                style: {
-                  'text-valign': 'center',
-                  'text-halign': 'right',
-                  'text-margin-x': 1,
-                  'shape': 'ellipse',
-                  'label': 'data(label)',
-                  'color': '#0b0c0c',
-                  'font-size': 3,
-                }
-              },
-              {
-                selector: 'node[type="entity"]',
-                style: {
-                  'background-color': '#1d70b8',
-                  'width': calculateEntityNodeSize,
-                  'height': calculateEntityNodeSize,
-                }
-              },
-              {
-                selector: 'node[type="alias"]',
-                style: {
-                  'background-color': '#f47738',
-                  'width': calculateAliasNodeSize,
-                  'height': calculateAliasNodeSize,
-                }
-              },
-              {
-                selector: 'edge',
-                style: {
-                  'width': 0.5,
-                  'target-arrow-shape': 'vee',
-                  'color': '#0b0c0c',
-                  'curve-style': 'bezier',
-                  'text-rotation': 'autorotate',
-                }
-              },
-              {
-                selector: 'edge[edge_type="alias"]',
-                style: {
-                  'line-color': '#9ca3af',
-                  'target-arrow-color': '#9ca3af',
-                }
-              },
-              {
-                selector: 'edge[edge_type="relationship"]',
-                style: {
-                  'label': 'data(label)',
-                  'font-size': 3,
-                  'line-color': '#a395db',
-                  'line-style': 'dashed',
-                  'target-arrow-color': '#a395db',
-                }
-              },
-              {
-                selector: ':selected',
-                style: {
-                  'border-width': 1.5,
-                  'border-color': '#ffdd00',
-                }
-              }
-            ],
-            layout: {
-              name: 'cose',
-              fit: true,
-              nodeDimensionsIncludeLabels: true,
-              componentSpacing: 200,
-              nodeRepulsion: function( node ) { return 2000; },
-              nodeOverlap: 1,
-            }
-          });
-
-          let filterUpdateTimeout;
-          filterInput.addEventListener('input', (event) => {
-            const filterTerm = event.target.value.trim().toLowerCase();
-            
-            clearTimeout(filterUpdateTimeout);
-            filterUpdateTimeout = setTimeout(() => { filterGraph(cy, filterTerm); }, 500);
-          });
-
-          cy.on('select', 'node', (event) => {
-            renderNodeDetails(event.target);
-          });
-
-          cy.on('tap', (event) => {
-            if (event.target === cy) {
-              resetSidebar();
-            }
-          });
-        } catch (error) {
-          status.textContent = error.message;
-          details.textContent = 'Unable to display graph.';
-          console.error(error);
-        }
-      }
-
-      loadGraph();
-    </script>
-  </body>
-</html>
+  loadGraph();
+</script>
+{% endblock %}
