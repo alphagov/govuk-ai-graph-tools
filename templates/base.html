@@ -5,10 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% block title %}Graph viewer{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/design-system.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/graph.css') }}" />
     {% block extra_head %}{% endblock %}
   </head>
-  <body>
+  <body class="govuk-template__body">
     <header class="govuk-template__header">
       <div class="govuk-header">
         <div class="govuk-header__container govuk-width-container">
