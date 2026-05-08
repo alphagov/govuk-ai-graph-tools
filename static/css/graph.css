@@ -5,12 +5,6 @@ body {
   color: #111827;
 }
 
-header {
-  padding: 1rem;
-  background: #1d70b8;
-  color: #ffffff;
-}
-
 main {
   display: grid;
   grid-template-columns: 1fr 320px;
@@ -100,12 +94,6 @@ main {
 
 .sidebar #node-details a:hover {
   text-decoration: underline;
-}
-
-.status {
-  margin-top: 0.5rem;
-  font-size: 0.9rem;
-  color: #ffffff;
 }
 
 .occurrence {
