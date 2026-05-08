@@ -3,18 +3,19 @@
 {% block title %}Graph viewer{% endblock %}
 
 {% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/graph.css') }}" />
 <script src="https://unpkg.com/cytoscape@3.4.0/dist/cytoscape.min.js"></script>
 {% endblock %}
 
 {% block content %}
-<div class="graph-container">
+<div class="graph-container govuk-body">
   <div id="graph"></div>
   <div class="graph-filter">
     <label for="graph-filter-input">Filter</label>
     <input id="graph-filter-input" type="search" placeholder="Filter nodes by label..." aria-label="Filter graph nodes" />
   </div>
 </div>
-<aside class="sidebar">
+<aside class="sidebar govuk-body">
   <h2 id="sidebar-title">No node selected</h2>
   <div id="node-details"><p>Select a node to view details.</p></div>
 </aside>
