@@ -61,7 +61,7 @@ def create_app():
                 case _:
                     error = f"Graph for '{run_path_param}' failed to generate."
 
-        return render_template("graph-unavailable.html", message=error)
+        return render_template("graph-unavailable.html", message=error, run_path=run_path_param)
 
     @app.route("/visualisations", methods=["GET"])
     def visualisations_page():
