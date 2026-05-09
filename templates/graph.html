@@ -16,6 +16,7 @@
   </div>
 </div>
 <aside class="sidebar govuk-body">
+  <button id="list-view-btn" class="govuk-button govuk-button--secondary" style="margin-bottom: 20px;">Show in list view</button>
   <h2 id="sidebar-title">No node selected</h2>
   <div id="node-details"><p>Select a node to view details.</p></div>
 </aside>
@@ -27,6 +28,29 @@
   const sidebarTitle = document.getElementById('sidebar-title');
   const details = document.getElementById('node-details');
   const filterInput = document.getElementById('graph-filter-input');
+  const listViewBtn = document.getElementById('list-view-btn');
+
+  let selectedNodeData = null;
+
+  listViewBtn.addEventListener('click', () => {
+    let url = `/metrics?run_path={{ run_path }}`;
+    if (selectedNodeData) {
+      const data = selectedNodeData.data();
+      const query = data.label;
+      url += `&q=${encodeURIComponent(query)}`;
+      
+      if (data.type === 'entity') {
+        url += `&entity_id=${encodeURIComponent(data.id)}`;
+      } else if (data.type === 'alias') {
+        url += `&alias_id=${encodeURIComponent(data.id)}`;
+        const parentEntities = selectedNodeData.incomers('node[type="entity"]');
+        if (parentEntities.length > 0) {
+          url += `&entity_id=${encodeURIComponent(parentEntities[0].id())}`;
+        }
+      }
+    }
+    window.location.href = url;
+  });
 
   const BASE_NODE_SIZE = 10;
 
@@ -70,8 +94,7 @@
   function renderEntityDetails(node) {
     const data = node.data();
 
-    const aliasEdges = node.connectedEdges('edge[edge_type="alias"]');
-    const aliasNodes = aliasEdges.connectedNodes('node[type="alias"]');
+    const aliasNodes = node.outgoers('node[type="alias"]');
     const aliasCount = aliasNodes.length;
 
     sidebarTitle.textContent =
@@ -144,7 +167,7 @@
 
   function calculateEntityNodeSize(node) {
     const data = node.data();
-    const aliasCount = node.connectedEdges('edge[edge_type="alias"]').length;
+    const aliasCount = node.outgoers('node[type="alias"]').length;
     return BASE_NODE_SIZE + aliasCount * 2;
   }
 
@@ -155,6 +178,7 @@
   }
 
   function resetSidebar() {
+    selectedNodeData = null;
     sidebarTitle.textContent = 'No node selected';
     details.innerHTML = '<p>Select a node to view details.</p>';
   }
@@ -280,6 +304,7 @@
       });
 
       cy.on('select', 'node', (event) => {
+        selectedNodeData = event.target;
         renderNodeDetails(event.target);
       });
 

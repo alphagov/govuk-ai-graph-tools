@@ -23,6 +23,9 @@
     const urlParams = new URLSearchParams(window.location.search);
     const initialFilters = urlParams.getAll('q');
     
+    const initialEntityId = urlParams.get('entity_id');
+    const initialAliasId = urlParams.get('alias_id');
+    
     const [entities, setEntities] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -32,8 +35,8 @@
     
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
-    const [selectedEntityId, setSelectedEntityId] = useState(null);
-    const [selectedAliasId, setSelectedAliasId] = useState(null);
+    const [selectedEntityId, setSelectedEntityId] = useState(initialEntityId || null);
+    const [selectedAliasId, setSelectedAliasId] = useState(initialAliasId || null);
     const [checkedEntityIds, setCheckedEntityIds] = useState(new Set());
     const [sortConfig, setSortConfig] = useState({ key: 'entity', direction: 'asc' });
 
@@ -104,6 +107,8 @@
     }, []);
 
     useEffect(() => {
+      if (entities.length === 0) return;
+      
       if (selectedEntityId) {
         const entity = entities.find(e => e.data.id === selectedEntityId);
         if (entity && entity.aliases.length > 0) {
