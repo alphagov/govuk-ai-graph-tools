@@ -5,9 +5,6 @@ FROM python:3.13-slim
 RUN pip install uv
 
 ENV UV_CACHE_DIR=/tmp/.uv_cache
-ENV OPENSEARCH_ID=govuk/ai-accelerator/opensearch
-
-
 
 WORKDIR /app
 COPY pyproject.toml uv.lock ./
