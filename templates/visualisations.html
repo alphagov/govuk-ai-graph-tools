@@ -1,21 +1,20 @@
 {% extends 'base.html' %}
 
-{% block title %}Visualisations{% endblock %}
+{% block title %}AI Graph Tools{% endblock %}
 
 {% block content %}
-<div class="govuk-body">
-  <h1>Visualisations</h1>
-
+<div class="vis-menu">
+  <p class="vis-menu__heading">Choose a graph to explore:</p>
   {% if visualisations %}
-  <ul>
+  <ul class="vis-menu__list">
     {% for v in visualisations %}
-    <li>
-      <a href="{{ url_for('graph_page', run_path=v.run_path) }}">{{ v.run_path }}</a>
+    <li class="vis-menu__item">
+      <a class="vis-menu__link" href="{{ url_for('graph_page', run_path=v.run_path) }}">{{ v.run_path }}</a>
     </li>
     {% endfor %}
   </ul>
   {% else %}
-  <p>There are no visualisations to show</p>
+  <p class="vis-menu__empty">There are no visualisations to show.</p>
   {% endif %}
 </div>
 {% endblock %}
