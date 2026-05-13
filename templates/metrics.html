@@ -267,6 +267,15 @@
                 value={filters[0] || ""}
                 onChange={e => updateFilter(0, e.target.value)}
               />
+              {filters[0] && (
+                <button 
+                  className="search-clear-btn" 
+                  onClick={() => updateFilter(0, "")}
+                  title="Clear search"
+                >
+                  ✕
+                </button>
+              )}
             </div>
           </div>
           <div className="actions-section">
