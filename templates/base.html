@@ -9,11 +9,11 @@
     {% block extra_head %}{% endblock %}
   </head>
   <body>
-    <header class="app-header">
-      <div class="app-header__inner">
-        <div class="app-header__brand">
-          <a href="{{ url_for('visualisations_page') }}" class="app-header__logo" aria-label="GOV.UK">
-            <svg focusable="false" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 324 60" height="28" width="150" fill="currentColor" aria-label="GOV.UK">
+    <header class="govuk-header">
+      <div class="govuk-header__container govuk-header__container--full-width">
+        <div class="govuk-header__logo">
+          <a href="{{ url_for('visualisations_page') }}" class="govuk-header__homepage-link" aria-label="GOV.UK">
+            <svg class="govuk-header__logotype" focusable="false" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 324 60" height="28" width="150" fill="currentColor" aria-label="GOV.UK">
               <title>GOV.UK</title>
               <g>
                 <circle cx="20" cy="17.6" r="3.7" />
