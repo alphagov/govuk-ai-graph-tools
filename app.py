@@ -4,7 +4,7 @@ import os
 
 from asgiref.wsgi import WsgiToAsgi
 from dotenv import load_dotenv
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, redirect, render_template, request, url_for
 from werkzeug.exceptions import BadRequest
 
 from src.utils import (
@@ -31,6 +31,10 @@ logger = logging.getLogger(__name__)
 
 def create_app():
     app = Flask(__name__)
+
+    @app.route("/", methods=["GET"])
+    def index():
+        return redirect(url_for("visualisations_page"))
 
     @app.route("/graph", methods=["GET"])
     def graph_page():

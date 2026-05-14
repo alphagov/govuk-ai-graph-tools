@@ -1,7 +1,5 @@
 {% extends 'base.html' %}
 
-{% block title %}Graph viewer{% endblock %}
-
 {% block extra_head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/graph.css') }}" />
 <script src="https://unpkg.com/cytoscape@3.4.0/dist/cytoscape.min.js"></script>

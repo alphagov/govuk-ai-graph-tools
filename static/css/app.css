@@ -1,0 +1,142 @@
+/* Shared app styles: global base, app header */
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: "GDS Transport", arial, sans-serif;
+  background: #ffffff;
+  color: var(--govuk-text-colour);
+  -webkit-font-smoothing: antialiased;
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+main {
+  padding: 24px;
+}
+
+/* ---------- Visualisations menu ---------- */
+
+.vis-menu {
+  max-width: 480px;
+  margin: 32px auto 0;
+}
+
+.vis-menu__heading {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--govuk-text-colour);
+  margin: 0 0 4px;
+}
+
+.vis-menu__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--govuk-border-colour);
+}
+
+.vis-menu__item {
+  border-bottom: 1px solid var(--govuk-border-colour);
+}
+
+.vis-menu__link {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 0;
+  color: var(--govuk-link-colour);
+  font-weight: 700;
+  font-size: 16px;
+  text-decoration: underline;
+  text-decoration-thickness: max(1px, .0625rem);
+  text-underline-offset: .1578em;
+}
+
+.vis-menu__link::after {
+  content: "";
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--govuk-link-colour);
+  border-top: 2px solid var(--govuk-link-colour);
+  transform: rotate(45deg);
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+
+.vis-menu__link:hover {
+  color: var(--govuk-link-hover-colour);
+  text-decoration-thickness: max(3px, .1875rem);
+}
+
+.vis-menu__link:hover::after {
+  border-color: var(--govuk-link-hover-colour);
+}
+
+.vis-menu__link:visited {
+  color: var(--govuk-link-visited-colour);
+}
+
+.vis-menu__link:visited::after {
+  border-color: var(--govuk-link-visited-colour);
+}
+
+.vis-menu__empty {
+  color: var(--govuk-secondary-text-colour);
+  font-size: 16px;
+}
+
+/* ---------- GOV.UK header overrides ---------- */
+
+/* Standard border is 1px transparent; ours is the 10px white bar */
+.govuk-header {
+  border-bottom: 10px solid #fff;
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+}
+
+/* govuk-width-container handles max-width/margin; we need flex + our padding */
+.govuk-header > .govuk-width-container {
+  padding-top: 14px;
+  padding-bottom: 14px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+/* Standard logo div stacks; we need it to flex the link + h1 side by side */
+.govuk-header__logo {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  padding: 0;
+}
+
+/* Reset the -3px offset; separator moved here since the logo is no longer a link */
+.govuk-header__logotype {
+  top: 0;
+  width: 150px;
+  height: 28px;
+  padding-right: 16px;
+  border-right: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+/* No design-system equivalent for a separate h1 beside the logo */
+.govuk-header h1 {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* ---------- Service navigation ---------- */
+
+.govuk-service-navigation__list .app-nav__push-right {
+  margin-left: auto;
+}
