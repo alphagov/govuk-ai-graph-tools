@@ -259,7 +259,7 @@
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
               </svg>
               <input 
-                type="text" 
+                type="search" 
                 className="search-bar" 
                 placeholder="Search entities, aliases, or context..." 
                 value={filters[0] || ""}
@@ -341,52 +341,115 @@
               {paginatedEntities.map(entity => {
                 const isSelected = selectedEntityId === entity.data.id;
                 const category = entity.data.id.split('__')[0];
+                
+                let currentSelectedAlias = null;
+                if (isSelected) {
+                  currentSelectedAlias = entity.aliases.find(a => a.data.id === selectedAliasId);
+                  if (!currentSelectedAlias && entity.aliases.length > 0) {
+                    currentSelectedAlias = entity.aliases[0];
+                  }
+                }
+                const occurrencesForAlias = currentSelectedAlias?.data.occurrences || [];
+
                 return (
-                  <tr 
-                    key={entity.data.id} 
-                    className={isSelected ? 'selected' : ''}
-                    onClick={() => setSelectedEntityId(isSelected ? null : entity.data.id)}
-                  >
-                    <td className="text-center" onClick={e => e.stopPropagation()}>
-                      <input 
-                        type="checkbox" 
-                        checked={checkedEntityIds.has(entity.data.id)}
-                        onChange={(e) => {
-                          const newChecked = new Set(checkedEntityIds);
-                          if (e.target.checked) {
-                            newChecked.add(entity.data.id);
-                          } else {
-                            newChecked.delete(entity.data.id);
-                          }
-                          setCheckedEntityIds(newChecked);
-                        }}
-                      />
-                    </td>
-                    <td>
-                      <div className="entity-name">{entity.data.label || entity.data.id}</div>
-                      <div className="entity-id">{entity.data.id}</div>
-                    </td>
-                    <td>
-                      <span className="badge badge-category">{category}</span>
-                    </td>
-                    <td>
-                      <div className="aliases-container">
-                        {entity.aliases.slice(0, 3).map((alias, idx) => (
-                          <span key={idx} className="badge badge-alias">{alias.data.label}</span>
-                        ))}
-                        {entity.aliases.length > 3 && (
-                          <span className="alias-more-count">+{entity.aliases.length - 3} more</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="text-center">{entity.aliasCount}</td>
-                    <td className="text-center">{entity.totalOccurrences}</td>
-                  </tr>
+                  <React.Fragment key={entity.data.id}>
+                    <tr 
+                      className={isSelected ? 'selected' : ''}
+                      onClick={() => setSelectedEntityId(isSelected ? null : entity.data.id)}
+                    >
+                      <td className="text-center" onClick={e => e.stopPropagation()}>
+                        <input 
+                          type="checkbox" 
+                          checked={checkedEntityIds.has(entity.data.id)}
+                          onChange={(e) => {
+                            const newChecked = new Set(checkedEntityIds);
+                            if (e.target.checked) {
+                              newChecked.add(entity.data.id);
+                            } else {
+                              newChecked.delete(entity.data.id);
+                            }
+                            setCheckedEntityIds(newChecked);
+                          }}
+                        />
+                      </td>
+                      <td>
+                        <div className="entity-name">{entity.data.label || entity.data.id}</div>
+                        <div className="entity-id">{entity.data.id}</div>
+                      </td>
+                      <td>
+                        <span className="badge badge-category">{category}</span>
+                      </td>
+                      <td>
+                        <div className="aliases-container">
+                          {entity.aliases.slice(0, 3).map((alias, idx) => (
+                            <span key={idx} className="badge badge-alias">{alias.data.label}</span>
+                          ))}
+                          {entity.aliases.length > 3 && (
+                            <span className="alias-more-count">+{entity.aliases.length - 3} more</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="text-center">{entity.aliasCount}</td>
+                      <td className="text-center">{entity.totalOccurrences}</td>
+                    </tr>
+                    {isSelected && (
+                      <tr className="expanded-detail-row">
+                        <td colSpan="6" className="expanded-detail-cell" onClick={e => e.stopPropagation()}>
+                          <div className="detail-pane">
+                            <div className="detail-sidebar">
+                              <div className="detail-header">Aliases</div>
+                              <div className="detail-content scrollable-content">
+                                {entity.aliases.map(alias => (
+                                  <div 
+                                    key={alias.data.id} 
+                                    className={`alias-list-item ${selectedAliasId === alias.data.id ? 'active' : ''}`}
+                                    onClick={() => setSelectedAliasId(alias.data.id)}
+                                  >
+                                    <div className="alias-name">{alias.data.label}</div>
+                                    <div className="alias-list-count">{(alias.data.occurrences || []).length} occurrences</div>
+                                  </div>
+                                ))}
+                                {entity.aliases.length === 0 && (
+                                  <div className="empty-state-text">No aliases found.</div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="detail-main">
+                              <div className="detail-header">
+                                Occurrences for: {currentSelectedAlias?.data.label || 'None'}
+                              </div>
+                              <div className="detail-content">
+                                {currentSelectedAlias ? (
+                                  <div className="occurrences-list">
+                                    {occurrencesForAlias.map((occ, idx) => (
+                                      <div key={idx} className="occurrence-card">
+                                        <div dangerouslySetInnerHTML={{ __html: occ.context }}></div>
+                                        {occ.link && (
+                                          <a href={occ.link} target="_blank" rel="noopener noreferrer" className="occurrence-link">
+                                            View on GOV.UK ↗
+                                          </a>
+                                        )}
+                                      </div>
+                                    ))}
+                                    {occurrencesForAlias.length === 0 && (
+                                      <div className="empty-state-text-minimal">No occurrences found for this alias.</div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="empty-state-text-padded">Select an alias to view occurrences.</div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 );
               })}
               {paginatedEntities.length === 0 && (
                 <tr>
-                  <td colSpan="4" className="empty-state-row">
+                  <td colSpan="6" className="empty-state-row">
                     No entities match the current filters.
                   </td>
                 </tr>
@@ -420,8 +483,7 @@
             </div>
             <div>
               <select 
-                className="search-bar"
-                className="page-select"
+                className="search-bar page-select"
                 value={pageSize} 
                 onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }} 
               >
@@ -429,56 +491,6 @@
                 <option value={20}>20 per page</option>
                 <option value={50}>50 per page</option>
               </select>
-            </div>
-          </div>
-        )}
-
-        {/* Detail Pane */}
-        {selectedEntityId && selectedEntity && (
-          <div className="detail-pane">
-            <div className="detail-sidebar">
-              <div className="detail-header">Aliases</div>
-              <div className="detail-content" className="scrollable-content">
-                {selectedEntity.aliases.map(alias => (
-                  <div 
-                    key={alias.data.id} 
-                    className={`alias-list-item ${selectedAliasId === alias.data.id ? 'active' : ''}`}
-                    onClick={() => setSelectedAliasId(alias.data.id)}
-                  >
-                    <div className="alias-name">{alias.data.label}</div>
-                    <div className="alias-list-count">{(alias.data.occurrences || []).length} occurrences</div>
-                  </div>
-                ))}
-                {selectedEntity.aliases.length === 0 && (
-                  <div className="empty-state-text">No aliases found.</div>
-                )}
-              </div>
-            </div>
-            <div className="detail-main">
-              <div className="detail-header">
-                Occurrences for: {selectedAlias?.data.label || 'None'}
-              </div>
-              <div className="detail-content">
-                {selectedAlias ? (
-                  <div className="occurrences-list">
-                    {occurrencesForAlias.map((occ, idx) => (
-                      <div key={idx} className="occurrence-card">
-                        <div dangerouslySetInnerHTML={{ __html: occ.context }}></div>
-                        {occ.link && (
-                          <a href={occ.link} target="_blank" rel="noopener noreferrer" className="occurrence-link">
-                            View on GOV.UK ↗
-                          </a>
-                        )}
-                      </div>
-                    ))}
-                    {occurrencesForAlias.length === 0 && (
-                      <div className="empty-state-text-minimal">No occurrences found for this alias.</div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="empty-state-text-padded">Select an alias to view occurrences.</div>
-                )}
-              </div>
             </div>
           </div>
         )}
