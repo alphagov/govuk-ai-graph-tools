@@ -118,21 +118,25 @@ main {
   padding: 0;
 }
 
-/* Standard link is display:inline; we need flex + right-side divider */
+/* Design system sets 30px on this class; inherit from the h1 instead */
 .govuk-header__homepage-link {
-  display: flex;
-  align-items: flex-end;
-  padding-right: 16px;
-  padding-bottom: 2px;
-  border-right: 1px solid rgba(255, 255, 255, 0.4);
-  margin-bottom: 0;
+  font-size: inherit;
 }
 
-/* Reset the -3px offset from the standard logotype */
+/* Suppress focus styles for mouse clicks; keyboard focus still shows them */
+.govuk-header__homepage-link:focus:not(:focus-visible) {
+  background: transparent;
+  box-shadow: none;
+  color: #fff;
+}
+
+/* Reset the -3px offset; separator moved here since the logo is no longer a link */
 .govuk-header__logotype {
   top: 0;
   width: 150px;
   height: 28px;
+  padding-right: 16px;
+  border-right: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 /* No design-system equivalent for a separate h1 beside the logo */
