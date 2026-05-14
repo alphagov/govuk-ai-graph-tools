@@ -98,11 +98,10 @@ main {
   box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.1);
 }
 
-/* Standard container is block with 0 15px padding; we need flex + our padding */
-.govuk-header__container--full-width {
-  max-width: 1600px;
-  margin: 0 auto;
-  padding: 14px 24px;
+/* govuk-width-container handles max-width/margin; we need flex + our padding */
+.govuk-header > .govuk-width-container {
+  padding-top: 14px;
+  padding-bottom: 14px;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
@@ -116,18 +115,6 @@ main {
   align-items: flex-end;
   gap: 16px;
   padding: 0;
-}
-
-/* Design system sets 30px on this class; inherit from the h1 instead */
-.govuk-header__homepage-link {
-  font-size: inherit;
-}
-
-/* Suppress focus styles for mouse clicks; keyboard focus still shows them */
-.govuk-header__homepage-link:focus:not(:focus-visible) {
-  background: transparent;
-  box-shadow: none;
-  color: #fff;
 }
 
 /* Reset the -3px offset; separator moved here since the logo is no longer a link */
@@ -148,8 +135,8 @@ main {
   letter-spacing: -0.01em;
 }
 
-.govuk-header .status {
-  margin: 4px 0 0;
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.85);
+/* ---------- Service navigation ---------- */
+
+.govuk-service-navigation__list .app-nav__push-right {
+  margin-left: auto;
 }
