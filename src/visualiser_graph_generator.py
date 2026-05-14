@@ -15,13 +15,17 @@ from src.models.graph_models import (
     Edge,
     EdgeData,
     Entity,
+    EntityOutlier,
     GraphInput,
     GraphOutput,
     Node,
     NodeData,
     Occurrence,
+    OutlierAlias,
     Relationship,
+    SimilarAlias,
 )
+from src.utils.alias_distance import calculate_alias_distance
 
 
 logger = logging.getLogger(__name__)
@@ -181,6 +185,7 @@ def build_node_structure(
 ) -> GraphOutput:
     """Constructs the final list of nodes and edges."""
     nodes, edges = [], []
+    outliers = []
     id_to_canonical = {ent.id: ent.canonical_key for ent in entities}
 
     for ent in entities:
@@ -205,7 +210,9 @@ def build_node_structure(
                 occ.extend(occurrences)
 
         # Add the deduplicated alias nodes and their edges
-        for alias_id, node_data in alias_map.items():
+        unique_aliases = list(alias_map.values())
+        for node_data in unique_aliases:
+            alias_id = node_data.id
             if not node_data.occurrences:
                 node_data.occurrences = None
 
@@ -223,6 +230,36 @@ def build_node_structure(
                 )
             )
 
+        # Build outlier aliases structure for this entity
+        outlier_aliases = []
+        for curr_alias in unique_aliases:
+            similar_aliases = []
+            for other_alias in unique_aliases:
+                if other_alias.id != curr_alias.id:
+                    dist = calculate_alias_distance(curr_alias.label, other_alias.label)
+                    similar_aliases.append(
+                        SimilarAlias(
+                            id=other_alias.id,
+                            label=other_alias.label,
+                            similarity=dist,
+                        )
+                    )
+            outlier_aliases.append(
+                OutlierAlias(
+                    id=curr_alias.id,
+                    label=curr_alias.label,
+                    similar_aliases=similar_aliases,
+                )
+            )
+
+        outliers.append(
+            EntityOutlier(
+                entity_id=ent_id,
+                entity_label=human_label,
+                aliases=outlier_aliases,
+            )
+        )
+
     for rel in relationships or []:
         source = id_to_canonical.get(rel.from_, rel.from_)
         target = id_to_canonical.get(rel.to, rel.to)
@@ -237,7 +274,12 @@ def build_node_structure(
             )
         )
 
-    return GraphOutput(nodes=nodes, edges=edges, relationships=relationships or [])
+    return GraphOutput(
+        nodes=nodes,
+        edges=edges,
+        relationships=relationships or [],
+        outliers=outliers,
+    )
 
 
 async def generate_graph(

@@ -62,7 +62,26 @@ class Edge(BaseModel):
     data: EdgeData
 
 
+class SimilarAlias(BaseModel):
+    id: str
+    label: str
+    similarity: int
+
+
+class OutlierAlias(BaseModel):
+    id: str
+    label: str
+    similar_aliases: List[SimilarAlias] = Field(default_factory=list)
+
+
+class EntityOutlier(BaseModel):
+    entity_id: str
+    entity_label: str
+    aliases: List[OutlierAlias] = Field(default_factory=list)
+
+
 class GraphOutput(BaseModel):
     nodes: List[Node]
     edges: List[Edge]
     relationships: List[Relationship] = Field(default_factory=list)
+    outliers: List[EntityOutlier] = Field(default_factory=list)
