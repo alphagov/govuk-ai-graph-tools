@@ -1,20 +1,4 @@
-/* Shared app styles: design tokens, global base, app header */
-
-:root {
-  --govuk-blue: #1d70b8;
-  --govuk-blue-dark: #144e81;
-  --govuk-text: #0b0c0c;
-  --govuk-text-muted: #505a5f;
-  --govuk-border: #b1b4b6;
-  --govuk-border-light: #d1d5d8;
-  --govuk-bg: #f3f2f1;
-  --govuk-yellow: #ffdd00;
-  --govuk-focus: #ffdd00;
-  --govuk-link: #1d70b8;
-  --govuk-link-visited: #4c2c92;
-  --govuk-error: #d4351c;
-  --govuk-success: #00703c;
-}
+/* Shared app styles: global base, app header */
 
 * { box-sizing: border-box; }
 
@@ -24,7 +8,7 @@ body {
   margin: 0;
   font-family: "GDS Transport", arial, sans-serif;
   background: #ffffff;
-  color: var(--govuk-text);
+  color: var(--govuk-text-colour);
   -webkit-font-smoothing: antialiased;
   font-size: 16px;
   line-height: 1.45;
@@ -44,7 +28,7 @@ main {
 .vis-menu__heading {
   font-size: 19px;
   font-weight: 700;
-  color: var(--govuk-text);
+  color: var(--govuk-text-colour);
   margin: 0 0 4px;
 }
 
@@ -52,11 +36,11 @@ main {
   list-style: none;
   margin: 0;
   padding: 0;
-  border-top: 1px solid var(--govuk-border);
+  border-top: 1px solid var(--govuk-border-colour);
 }
 
 .vis-menu__item {
-  border-bottom: 1px solid var(--govuk-border);
+  border-bottom: 1px solid var(--govuk-border-colour);
 }
 
 .vis-menu__link {
@@ -64,7 +48,7 @@ main {
   justify-content: space-between;
   align-items: center;
   padding: 15px 0;
-  color: var(--govuk-link);
+  color: var(--govuk-link-colour);
   font-weight: 700;
   font-size: 16px;
   text-decoration: underline;
@@ -77,32 +61,32 @@ main {
   display: block;
   width: 8px;
   height: 8px;
-  border-right: 2px solid var(--govuk-link);
-  border-top: 2px solid var(--govuk-link);
+  border-right: 2px solid var(--govuk-link-colour);
+  border-top: 2px solid var(--govuk-link-colour);
   transform: rotate(45deg);
   flex-shrink: 0;
   margin-left: 12px;
 }
 
 .vis-menu__link:hover {
-  color: var(--govuk-blue-dark);
+  color: var(--govuk-link-hover-colour);
   text-decoration-thickness: max(3px, .1875rem);
 }
 
 .vis-menu__link:hover::after {
-  border-color: var(--govuk-blue-dark);
+  border-color: var(--govuk-link-hover-colour);
 }
 
 .vis-menu__link:visited {
-  color: var(--govuk-link-visited);
+  color: var(--govuk-link-visited-colour);
 }
 
 .vis-menu__link:visited::after {
-  border-color: var(--govuk-link-visited);
+  border-color: var(--govuk-link-visited-colour);
 }
 
 .vis-menu__empty {
-  color: var(--govuk-text-muted);
+  color: var(--govuk-secondary-text-colour);
   font-size: 16px;
 }
 
@@ -199,11 +183,11 @@ main {
 
 .view-tab[aria-selected="true"] {
   color: #fff;
-  border-bottom-color: var(--govuk-yellow);
+  border-bottom-color: var(--govuk-focus-colour);
   background: rgba(255, 255, 255, 0.08);
 }
 
 .view-tab:focus-visible {
-  outline: 3px solid var(--govuk-yellow);
+  outline: 3px solid var(--govuk-focus-colour);
   outline-offset: -3px;
 }
