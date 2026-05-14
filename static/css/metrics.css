@@ -254,13 +254,27 @@ tr.selected td:first-child {
   max-width: 400px;
 }
 
-/* Detail Pane */
+/* Expanded Inline Details directly under row */
+.expanded-detail-row {
+  cursor: default;
+}
+.expanded-detail-row:hover {
+  background-color: transparent;
+}
+
+.expanded-detail-cell {
+  padding: 0 !important;
+  border-bottom: 2px solid #9ca3af !important;
+}
+
+/* Detail Pane (restored original style) */
 .detail-pane {
   display: flex;
   height: 40vh;
   min-height: 250px;
   border-top: 1px solid #e5e7eb;
   background-color: #f9fafb;
+  width: 100%;
 }
 
 .detail-sidebar {
