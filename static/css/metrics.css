@@ -466,3 +466,73 @@ tr.selected td:first-child {
   color: #6b7280;
   padding: 16px;
 }
+
+/* Similarity Threshold Slider */
+.threshold-slider-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+  margin-right: 20px;
+}
+
+.threshold-slider-container label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.threshold-slider {
+  width: 200px;
+  height: 4px;
+  border-radius: 2px;
+  background: #e5e7eb;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.threshold-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #3b82f6;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.threshold-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #3b82f6;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.threshold-slider::-webkit-slider-thumb:hover {
+  background: #2563eb;
+}
+
+.threshold-slider::-moz-range-thumb:hover {
+  background: #2563eb;
+}
+
+.slider-with-labels {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.slider-labels {
+  display: flex;
+  justify-content: space-between;
+  width: 200px;
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
+}

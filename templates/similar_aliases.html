@@ -17,8 +17,6 @@
   const { useState, useEffect, useMemo } = React;
   const runPath = "{{ run_path|e }}";
 
-  const similarityThreshold = 5;
-
   {% raw %}
   function SimilarAliasesDashboard() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -39,6 +37,7 @@
     const [sortConfig, setSortConfig] = useState({ key: 'entity', direction: 'asc' });
     const [maxAliasSimilarity, setMaxAliasSimilarity] = useState(0);
     const [minAliasSimilarity, setMinAliasSimilarity] = useState(0);
+    const [similarityThreshold, setSimilarityThreshold] = useState(5);
 
     // Sync URL with filters
     useEffect(() => {
@@ -138,7 +137,7 @@
       });
 
       return result.filter(e => e.similar_aliases.length > 0);
-    }, [entities, filters]);
+    }, [entities, filters, similarityThreshold]);
 
     const sortedEntities = useMemo(() => {
       let sortableItems = [...filteredEntities];
@@ -233,6 +232,25 @@
             </div>
           ))}
           <button className="add-filter-btn" onClick={addFilter}>+ Add filter</button>
+          <div className="threshold-slider-container">
+            <label htmlFor="similarity-threshold">Closeness:</label>
+            <div className="slider-with-labels">
+              <input
+                id="similarity-threshold"
+                type="range"
+                min={minAliasSimilarity}
+                max={maxAliasSimilarity}
+                step="1"
+                value={similarityThreshold}
+                onChange={e => setSimilarityThreshold(e.target.value)}
+                className="threshold-slider"
+              />
+              <div className="slider-labels">
+                <span className="slider-label-start">more</span>
+                <span className="slider-label-end">less</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Master Table */}
