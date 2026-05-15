@@ -1,0 +1,313 @@
+{% extends 'base.html' %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/metrics.css') }}" />
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<p>Show aliases with their closest matches. A match is considered close if it is below the threshold.</p>
+<div id="root"></div>
+{% endblock %}
+
+{% block scripts %}
+<script type="text/babel">
+  const { useState, useEffect, useMemo } = React;
+  const runPath = "{{ run_path|e }}";
+
+  const similarityThreshold = 5;
+
+  {% raw %}
+  function SimilarAliasesDashboard() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialFilters = urlParams.getAll('q');
+
+    const initialEntityId = urlParams.get('entity_id');
+    const initialAliasId = urlParams.get('alias_id');
+
+    const [entities, setEntities] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    // Multiple search filters. 0th index is the main top-bar search.
+    const [filters, setFilters] = useState(initialFilters.length > 0 ? initialFilters : [""]);
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [sortConfig, setSortConfig] = useState({ key: 'entity', direction: 'asc' });
+
+    // Sync URL with filters
+    useEffect(() => {
+      const url = new URL(window.location);
+      url.searchParams.delete('q');
+      filters.forEach(f => {
+        if (f.trim()) {
+          url.searchParams.append('q', f.trim());
+        }
+      });
+      window.history.replaceState({}, '', url);
+      setCurrentPage(1);
+    }, [filters]);
+
+    // Fetch data
+    useEffect(() => {
+      fetch(`/graph-viewmodel${runPath ? `?run_path=${encodeURIComponent(runPath)}` : ''}`)
+        .then(res => {
+          if (!res.ok) throw new Error("Failed to fetch graph data");
+          return res.json();
+        })
+        .then(json => {
+          const processedEntities = [];
+          json.outliers.forEach(outlier => {
+            const rows = [];
+            outlier.aliases.forEach(alias => {
+                const row = {
+                  entity_id: outlier.entity_id,
+                  entity_label: outlier.entity_label,
+                  alias_id: alias.id,
+                  alias_label: alias.label,
+                  similar_aliases: alias.similar_aliases.sort((a, b) => a.similarity - b.similarity),
+                };
+                if (row.similar_aliases.length > 0) {
+                  rows.push(row);
+                }
+              });
+              processedEntities.push(...rows);
+            });
+          setEntities(processedEntities);
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error(err);
+          setError(err.message);
+          setLoading(false);
+        });
+    }, []);
+
+    const updateFilter = (index, val) => {
+      const newFilters = [...filters];
+      newFilters[index] = val;
+      setFilters(newFilters);
+    };
+
+    const addFilter = () => {
+      setFilters([...filters, ""]);
+    };
+
+    const removeFilter = (index) => {
+      const newFilters = filters.filter((_, i) => i !== index);
+      if (newFilters.length === 0) newFilters.push("");
+      setFilters(newFilters);
+    };
+
+    const filteredEntities = useMemo(() => {
+      const activeQueries = filters.map(f => f.toLowerCase().trim()).filter(f => f.length > 0);
+      let result = entities;
+
+      if (activeQueries.length > 0 ) {
+        result = result.filter(e => {
+          return activeQueries.every(query => {
+            const matches = e.entity_label.toLowerCase().includes(query) ||
+              e.alias_label.toLowerCase().includes(query);
+            return matches;
+          });
+        });
+      }
+      result = result.map(e => {
+        return { ...e, ...{similar_aliases: e.similar_aliases.filter(a => a.similarity <= similarityThreshold)} };
+      });
+
+      return result.filter(e => e.similar_aliases.length > 0);
+    }, [entities, filters]);
+
+    const sortedEntities = useMemo(() => {
+      let sortableItems = [...filteredEntities];
+      if (sortConfig !== null) {
+        sortableItems.sort((a, b) => {
+          let aValue, bValue;
+          switch (sortConfig.key) {
+            case 'entity':
+              aValue = (a.entity_label || a.entity_id).toLowerCase();
+              bValue = (b.entity_label || b.entity_id).toLowerCase();
+              break;
+            case 'alias':
+              aValue = (a.alias_label || a.alias_id).toLowerCase();
+              bValue = (b.alias_label || b.alias_id).toLowerCase();
+              break;
+            default:
+              aValue = 0;
+              bValue = 0;
+          }
+
+          if (aValue < bValue) {
+            return sortConfig.direction === 'asc' ? -1 : 1;
+          }
+          if (aValue > bValue) {
+            return sortConfig.direction === 'asc' ? 1 : -1;
+          }
+          return 0;
+        });
+      }
+      return sortableItems;
+    }, [filteredEntities, sortConfig]);
+
+    const totalPages = Math.ceil(sortedEntities.length / pageSize);
+    const startIndex = (currentPage - 1) * pageSize;
+    const paginatedEntities = sortedEntities.slice(startIndex, startIndex + pageSize);
+
+    if (loading) return <div className="loading-overlay">Loading data...</div>;
+    if (error) return <div className="loading-overlay" className="error-text">Error: {error}</div>;
+
+    const handleSort = (key) => {
+      let direction = 'asc';
+      if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+        direction = 'desc';
+      }
+      setSortConfig({ key, direction });
+    };
+
+    const renderSortIcon = (key) => {
+      if (!sortConfig || sortConfig.key !== key) return <span className="sort-icon-inactive">↕</span>;
+      return <span className="sort-icon-active">{sortConfig.direction === 'asc' ? '▲' : '▼'}</span>;
+    };
+
+    return (
+      <div className={"dashboard-content"}>
+
+        {/* Top Bar */}
+        <div className="top-bar">
+          <div className="search-section">
+            <div className="search-input-wrapper">
+              <svg className="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+              <input
+                type="search"
+                className="search-bar"
+                placeholder="Search entities and aliases..."
+                value={filters[0] || ""}
+                onChange={e => updateFilter(0, e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="actions-section">
+            <div className="entity-count">
+              <strong>{filteredEntities.length}</strong> of <strong>{entities.length}</strong> entities
+            </div>
+          </div>
+        </div>
+
+        {/* Filters Bar */}
+        <div className="filters-bar">
+          FILTERS
+          {filters.slice(1).map((filterVal, index) => (
+            <div key={index + 1} className="filter-pill">
+              <input
+                type="text"
+                value={filterVal}
+                onChange={e => updateFilter(index + 1, e.target.value)}
+                className="filter-input"
+                placeholder="Search query..."
+              />
+              <button onClick={() => removeFilter(index + 1)} className="filter-remove-btn">×</button>
+            </div>
+          ))}
+          <button className="add-filter-btn" onClick={addFilter}>+ Add filter</button>
+        </div>
+
+        {/* Master Table */}
+        <div className="table-container">
+          <table className="metrics-table">
+            <thead>
+              <tr>
+                <th className="col-sortable" onClick={() => handleSort('entity')}>
+                  ENTITY {renderSortIcon('entity')}
+                </th>
+                <th className="col-sortable" onClick={() => handleSort('alias')}>
+                  ALIAS {renderSortIcon('alias')}
+                </th>
+                <th>
+                  CLOSE MATCHES
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedEntities.map(entity => {
+                return (
+                  <React.Fragment key={entity.entity_id + "__" + entity.alias_id}>
+                    <tr>
+                      <td>
+                        <div className="entity-name">{entity.entity_label || entity.entity_id}</div>
+                      </td>
+                      <td>
+                        <div>{entity.alias_label || entity.alias_id}</div>
+                      </td>
+                      <td>
+                        <div className="aliases-container">
+                          {entity.similar_aliases.map((alias, idx) => (
+                            <span key={idx} className="badge badge-alias">{alias.label}</span>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  </React.Fragment>
+                );
+              })}
+              {paginatedEntities.length === 0 && (
+                <tr>
+                  <td colSpan="6" className="empty-state-row">
+                    No entities match the current filters.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination Controls */}
+        {filteredEntities.length > 0 && (
+          <div className="pagination-container">
+            <div className="pagination-info">
+              Showing {startIndex + 1} to {Math.min(startIndex + pageSize, filteredEntities.length)} of {filteredEntities.length} entities
+            </div>
+            <div className="pagination-controls">
+              <button
+                className="btn btn-outline"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => prev - 1)}
+              >
+                Previous
+              </button>
+              <span className="page-text">Page {currentPage} of {totalPages || 1}</span>
+              <button
+                className="btn btn-outline"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage(prev => prev + 1)}
+              >
+                Next
+              </button>
+            </div>
+            <div>
+              <select
+                className="search-bar page-select"
+                value={pageSize}
+                onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }} 
+              >
+                <option value={10}>10 per page</option>
+                <option value={20}>20 per page</option>
+                <option value={50}>50 per page</option>
+              </select>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const root = ReactDOM.createRoot(document.getElementById("root"));
+  root.render(<SimilarAliasesDashboard />);
+  {% endraw %}
+</script>
+{% endblock %}

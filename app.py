@@ -126,6 +126,12 @@ def create_app():
             return jsonify({"error": "Job ID not found"}), 404
         return jsonify(status_info), 200
 
+    @app.route("/outliers/similar-aliases", methods=["GET"])
+    def see_similar_aliases():
+        """View aliases that are (syntactically) similar to other aliases of the same entity."""
+        run_path_param = request.args.get("run_path", "")
+        return render_template("similar_aliases.html", run_path=run_path_param)
+
     @app.errorhandler(BadRequest)
     def handle_bad_request(e):
         return jsonify({"error": e.description}), 400
