@@ -37,6 +37,8 @@
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [sortConfig, setSortConfig] = useState({ key: 'entity', direction: 'asc' });
+    const [maxAliasSimilarity, setMaxAliasSimilarity] = useState(0);
+    const [minAliasSimilarity, setMinAliasSimilarity] = useState(0);
 
     // Sync URL with filters
     useEffect(() => {
@@ -76,6 +78,22 @@
               });
               processedEntities.push(...rows);
             });
+
+          let maxSimilarity = 0;
+          let minSimilarity = Infinity;
+          processedEntities.forEach(e => {
+            e.similar_aliases.forEach(a => {
+              if (a.similarity > maxSimilarity) {
+                maxSimilarity = a.similarity;
+              }
+              if (a.similarity < minSimilarity){
+                minSimilarity = a.similarity;
+              }
+            })
+          });
+
+          setMaxAliasSimilarity(maxSimilarity);
+          setMinAliasSimilarity(minSimilarity);
           setEntities(processedEntities);
           setLoading(false);
         })
