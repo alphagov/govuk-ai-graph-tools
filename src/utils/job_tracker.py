@@ -8,8 +8,6 @@ from typing import Optional
 
 import fsspec
 
-from src.visualiser_graph_generator import generate_graph, generate_output_path
-
 
 logger = logging.getLogger(__name__)
 
@@ -105,6 +103,8 @@ async def background_run_extraction(
         status["perform_indexing"] = perform_indexing
         update_job_status_metadata(job_id, status)
 
+        from src.visualiser_graph_generator import generate_graph
+
         await generate_graph(
             input_path,
             output_path,
@@ -145,6 +145,8 @@ async def resume_interrupted_jobs():
                     source_path = status.get("source_path")
                     if source_path:
                         try:
+                            from src.visualiser_graph_generator import generate_output_path
+
                             input_path, output_path = generate_output_path(source_path)
                             logger.info(f"Resuming interrupted job {job_id} for {source_path}")
                             extractor_type = status.get("extractor_type", "s3")
@@ -178,6 +180,8 @@ async def start_extraction_job(
         return {"error": "Missing 'source_path' query parameter"}, 400
 
     try:
+        from src.visualiser_graph_generator import generate_output_path
+
         input_path, output_path = generate_output_path(source_path)
 
         # Use a distinct job ID for OpenSearch to avoid collisions with S3 sequential jobs

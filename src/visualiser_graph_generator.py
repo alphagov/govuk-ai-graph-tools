@@ -12,6 +12,7 @@ from src.content_extractor.highlighter import highlight_occurrence
 from src.content_extractor.opensearch import OpenSearchConfig, OpenSearchQuoteExtractor
 from src.content_extractor.s3_sequential import S3QuoteExtractor
 from src.models.graph_models import (
+    AliasImbalanceStats,
     Edge,
     EdgeData,
     Entity,
@@ -232,7 +233,9 @@ def build_node_structure(
 
         # Build outlier aliases structure for this entity
         outlier_aliases = []
+        alias_imbalance = []
         for curr_alias in unique_aliases:
+            count = len(curr_alias.occurrences) if curr_alias.occurrences else 0
             similar_aliases = []
             for other_alias in unique_aliases:
                 if other_alias.id != curr_alias.id:
@@ -248,7 +251,15 @@ def build_node_structure(
                 OutlierAlias(
                     id=curr_alias.id,
                     label=curr_alias.label,
+                    occurrence_count=count,
                     similar_aliases=similar_aliases,
+                )
+            )
+            alias_imbalance.append(
+                AliasImbalanceStats(
+                    alias_id=curr_alias.id,
+                    alias_label=curr_alias.label,
+                    occurrence_count=count,
                 )
             )
 
@@ -256,6 +267,7 @@ def build_node_structure(
             EntityOutlier(
                 entity_id=ent_id,
                 entity_label=human_label,
+                alias_imbalance=alias_imbalance,
                 aliases=outlier_aliases,
             )
         )
