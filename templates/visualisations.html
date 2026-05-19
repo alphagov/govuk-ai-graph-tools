@@ -1,18 +1,29 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="vis-menu">
-  <p class="vis-menu__heading">Choose a knowledge graph to explore:</p>
+<div class="govuk-width-container">
+  <h1 class="govuk-heading-l">Available knowledge graphs per domain</h1>
   {% if visualisations %}
-  <ul class="vis-menu__list">
+    {% set ns = namespace(current_domain=None) %}
     {% for v in visualisations %}
-    <li class="vis-menu__item">
-      <a class="vis-menu__link" href="{{ url_for('graph_page', run_path=v.run_path) }}">{{ v.run_path }}</a>
-    </li>
+      {% set domain = v.run_path.split('/')[0] %}
+      {% set run_id = v.run_path.split('/')[1] %}
+      {% if domain != ns.current_domain %}
+        {% if ns.current_domain is not none %}
+        </ul>
+        <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
+        {% endif %}
+        {% set ns.current_domain = domain %}
+        <h2 class="govuk-heading-m">{{ domain }}</h2>
+        <ul class="govuk-list govuk-list--spaced">
+      {% endif %}
+      <li>
+        <a class="govuk-link" href="{{ url_for('graph_page', run_path=v.run_path) }}">{{ run_id }}</a>
+      </li>
     {% endfor %}
-  </ul>
+    </ul>
   {% else %}
-  <p class="vis-menu__empty">There are no visualisations to show.</p>
+  <p class="govuk-body">There are no visualisations to show.</p>
   {% endif %}
 </div>
 {% endblock %}
