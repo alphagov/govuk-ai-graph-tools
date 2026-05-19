@@ -234,10 +234,8 @@ def build_node_structure(
         # Build outlier aliases structure for this entity
         outlier_aliases = []
         alias_imbalance = []
-        counts = []
         for curr_alias in unique_aliases:
             count = len(curr_alias.occurrences) if curr_alias.occurrences else 0
-            counts.append(count)
             similar_aliases = []
             for other_alias in unique_aliases:
                 if other_alias.id != curr_alias.id:
