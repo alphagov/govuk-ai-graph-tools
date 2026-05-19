@@ -15,7 +15,6 @@ RUN uv sync --no-dev --no-install-project
 COPY src/ ./src/
 COPY static/ ./static/
 COPY templates/ ./templates/
-COPY graph-viewmodel.json ./graph-viewmodel.json
 COPY app.py ./app.py
 # COPY graph.json ./
 
