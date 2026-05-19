@@ -41,7 +41,7 @@ def create_app():
         """Serve the Cytoscape graph viewer page."""
         run_path_param = request.args.get("run_path")
         if not run_path_param:
-            return render_template("graph.html", run_path="")
+            return redirect(url_for("visualisations_page"))
 
         try:
             # Attempt to load the graph data to determine if it's available
@@ -75,7 +75,9 @@ def create_app():
     @app.route("/metrics", methods=["GET"])
     def metrics_page():
         """Serve the React CDN sample metrics dashboard."""
-        run_path_param = request.args.get("run_path", "")
+        run_path_param = request.args.get("run_path")
+        if not run_path_param:
+            return redirect(url_for("visualisations_page"))
         return render_template("metrics.html", run_path=run_path_param)
 
     @app.route("/graph-viewmodel", methods=["GET"])
@@ -83,6 +85,8 @@ def create_app():
         """Serve the graph data as JSON for the frontend."""
         try:
             run_path_param = request.args.get("run_path")
+            if not run_path_param:
+                return jsonify({"error": "Missing required parameter: run_path"}), 400
 
             graph_data = visualisation_graph_data(run_path_param)
 

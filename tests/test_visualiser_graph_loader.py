@@ -1,6 +1,23 @@
 from unittest.mock import MagicMock, patch
 
-from src.visualiser_graph_loader import available_visualisations
+import pytest
+from werkzeug.exceptions import BadRequest
+
+from src.visualiser_graph_loader import available_visualisations, visualiser_graph_file_path
+
+
+class TestVisualiserGraphFilePath:
+    def test_returns_s3_path_for_valid_run_path(self):
+        result = visualiser_graph_file_path("my-domain/run-2025-001")
+
+        assert (
+            result
+            == "s3://govuk-ai-accelerator-data-integration/graph_tools/my-domain/run-2025-001/graphNode.json"
+        )
+
+    def test_raises_bad_request_for_invalid_run_path_format(self):
+        with pytest.raises(BadRequest):
+            visualiser_graph_file_path("not-a-valid-path")
 
 
 class TestAvailableVisualisations:

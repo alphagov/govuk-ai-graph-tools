@@ -19,18 +19,14 @@ def load_json_file(file_path: str) -> Dict[str, Any]:
         return json.load(f)
 
 
-def visualiser_graph_file_path(run_path: str | None) -> str:
-    if run_path:
-        domain_name, run_id = extract_path_parts(run_path)
-        filename = f"s3://{GRAPH_TOOLS_S3_PATH}{domain_name}/{run_id}/graphNode.json"
-        logger.info(f"Loading graph data from: '{filename}'")
-    else:
-        filename = "graph-viewmodel.json"
-        logger.info("Loading default example graph data for viewmodel endpoint...")
+def visualiser_graph_file_path(run_path: str) -> str:
+    domain_name, run_id = extract_path_parts(run_path)
+    filename = f"s3://{GRAPH_TOOLS_S3_PATH}{domain_name}/{run_id}/graphNode.json"
+    logger.info(f"Loading graph data from: '{filename}'")
     return filename
 
 
-def visualisation_graph_data(run_path: str | None) -> Dict[str, Any]:
+def visualisation_graph_data(run_path: str) -> Dict[str, Any]:
     graph_filepath = visualiser_graph_file_path(run_path)
     graph_data = load_json_file(graph_filepath)
     return graph_data
