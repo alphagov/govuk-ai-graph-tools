@@ -55,9 +55,18 @@ def test_local_fixture_loads_independently_of_s3_path():
 def test_graph_output_relationships_contain_required_fields():
     data = load_json_file(FIXTURE_PATH)
     graph = GraphInput.model_validate(data)
-    empty_results: Dict[str, Any] = defaultdict(lambda: defaultdict(list))
 
-    output = build_node_structure(graph.entities, empty_results, graph.relationships)
+    from src.models.graph_models import Occurrence
+
+    mock_occurrence = Occurrence(link="mock", context="mock")
+
+    class MockAliasDict(dict):
+        def get(self, key, default=None):
+            return [mock_occurrence]
+
+    mock_results: Dict[str, Any] = defaultdict(MockAliasDict)
+
+    output = build_node_structure(graph.entities, mock_results, graph.relationships)
     dumped = output.model_dump(exclude_none=True)
 
     assert len(dumped["relationships"]) > 0
@@ -70,9 +79,18 @@ def test_graph_output_relationships_contain_required_fields():
 def test_relationship_edges_reference_existing_nodes():
     data = load_json_file(FIXTURE_PATH)
     graph = GraphInput.model_validate(data)
-    empty_results: Dict[str, Any] = defaultdict(lambda: defaultdict(list))
 
-    output = build_node_structure(graph.entities, empty_results, graph.relationships)
+    from src.models.graph_models import Occurrence
+
+    mock_occurrence = Occurrence(link="mock", context="mock")
+
+    class MockAliasDict(dict):
+        def get(self, key, default=None):
+            return [mock_occurrence]
+
+    mock_results: Dict[str, Any] = defaultdict(MockAliasDict)
+
+    output = build_node_structure(graph.entities, mock_results, graph.relationships)
     dumped = output.model_dump(exclude_none=True)
 
     node_ids = {n["data"]["id"] for n in dumped["nodes"]}
