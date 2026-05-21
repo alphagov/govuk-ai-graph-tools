@@ -53,31 +53,33 @@
                   </a>
                 </li>
                 {% endif %}
-                {% if request.path == url_for('graph_page') %}
-                <li class="govuk-service-navigation__item govuk-service-navigation__item--active app-nav__push-right">
-                  <a class="govuk-service-navigation__link" href="{{ url_for('graph_page', run_path=run_path) }}" aria-current="true">
-                    <strong class="govuk-service-navigation__active-fallback">Graph</strong>
-                  </a>
-                </li>
-                {% else %}
-                <li class="govuk-service-navigation__item app-nav__push-right">
-                  <a class="govuk-service-navigation__link" href="{{ url_for('graph_page', run_path=run_path) }}">
-                    Graph
-                  </a>
-                </li>
-                {% endif %}
-                {% if request.path == url_for('metrics_page') %}
-                <li class="govuk-service-navigation__item govuk-service-navigation__item--active">
-                  <a class="govuk-service-navigation__link" href="{{ url_for('metrics_page', run_path=run_path) }}" aria-current="true">
-                    <strong class="govuk-service-navigation__active-fallback">Metrics</strong>
-                  </a>
-                </li>
-                {% else %}
-                <li class="govuk-service-navigation__item">
-                  <a class="govuk-service-navigation__link" href="{{ url_for('metrics_page', run_path=run_path) }}">
-                    Metrics
-                  </a>
-                </li>
+                {% if request.path == url_for('graph_page') or request.path == url_for('metrics_page') %}
+                  {% if request.path == url_for('graph_page') %}
+                  <li class="govuk-service-navigation__item govuk-service-navigation__item--active app-nav__push-right">
+                    <a class="govuk-service-navigation__link" href="{{ url_for('graph_page', run_path=run_path) }}" aria-current="true">
+                      <strong class="govuk-service-navigation__active-fallback">Graph</strong>
+                    </a>
+                  </li>
+                  {% else %}
+                  <li class="govuk-service-navigation__item app-nav__push-right">
+                    <a class="govuk-service-navigation__link" href="{{ url_for('graph_page', run_path=run_path) }}">
+                      Graph
+                    </a>
+                  </li>
+                  {% endif %}
+                  {% if request.path == url_for('metrics_page') %}
+                  <li class="govuk-service-navigation__item govuk-service-navigation__item--active">
+                    <a class="govuk-service-navigation__link" href="{{ url_for('metrics_page', run_path=run_path) }}" aria-current="true">
+                      <strong class="govuk-service-navigation__active-fallback">Table</strong>
+                    </a>
+                  </li>
+                  {% else %}
+                  <li class="govuk-service-navigation__item">
+                    <a class="govuk-service-navigation__link" href="{{ url_for('metrics_page', run_path=run_path) }}">
+                      Table
+                    </a>
+                  </li>
+                  {% endif %}
                 {% endif %}
               </ul>
             </nav>
