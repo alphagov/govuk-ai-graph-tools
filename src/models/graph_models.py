@@ -124,6 +124,9 @@ class EntityOutlier(BaseModel):
         """
         import statistics
 
+        self.alias_imbalance = [stat for stat in self.alias_imbalance if stat.occurrence_count > 0]
+        self.aliases = [alias for alias in self.aliases if alias.occurrence_count > 0]
+
         counts = [stat.occurrence_count for stat in self.alias_imbalance]
         if len(counts) > 1:
             mean = statistics.mean(counts)
@@ -144,3 +147,32 @@ class GraphOutput(BaseModel):
     edges: List[Edge]
     relationships: List[Relationship] = Field(default_factory=list)
     outliers: List[EntityOutlier] = Field(default_factory=list)
+
+    def model_post_init(self, __context: Any) -> None:
+        valid_entity_ids = set()
+        valid_node_ids = set()
+
+        for outlier in self.outliers:
+            if len(outlier.alias_imbalance) > 0:
+                valid_entity_ids.add(outlier.entity_id)
+                valid_node_ids.add(outlier.entity_id)
+                for alias in outlier.aliases:
+                    valid_node_ids.add(alias.id)
+
+        self.outliers = [
+            outlier for outlier in self.outliers if outlier.entity_id in valid_entity_ids
+        ]
+
+        self.nodes = [node for node in self.nodes if node.data.id in valid_node_ids]
+
+        self.edges = [
+            edge
+            for edge in self.edges
+            if edge.data.source in valid_node_ids and edge.data.target in valid_node_ids
+        ]
+
+        self.relationships = [
+            rel
+            for rel in self.relationships
+            if rel.from_ in valid_entity_ids and rel.to in valid_entity_ids
+        ]
