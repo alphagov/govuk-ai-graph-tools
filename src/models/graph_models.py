@@ -26,27 +26,25 @@ class Entity(BaseModel):
                 word.lower() for word in re.split(r"(?=[A-Z])", self.label) if word
             )
 
-            def _slugify(text: str) -> str:
-                return re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")
-
-            new_alias_slug = new_alias_name
-            existing_alias = next((a for a in self.aliases if a.name == new_alias_slug), None)
-
-            source_urls_val = self.properties.get("sourceUrls", "")
-            if isinstance(source_urls_val, list):
-                new_urls = [
-                    url.strip() for url in source_urls_val if isinstance(url, str) and url.strip()
-                ]
-            elif isinstance(source_urls_val, str):
-                new_urls = (
-                    [url.strip() for url in source_urls_val.split(",") if url.strip()]
-                    if source_urls_val
-                    else []
-                )
-            else:
-                new_urls = []
+            existing_alias = next((a for a in self.aliases if a.name == new_alias_name), None)
 
             if not existing_alias:
+                source_urls_val = self.properties.get("sourceUrls", "")
+                if isinstance(source_urls_val, list):
+                    new_urls = [
+                        url.strip()
+                        for url in source_urls_val
+                        if isinstance(url, str) and url.strip()
+                    ]
+                elif isinstance(source_urls_val, str):
+                    new_urls = (
+                        [url.strip() for url in source_urls_val.split(",") if url.strip()]
+                        if source_urls_val
+                        else []
+                    )
+                else:
+                    new_urls = []
+
                 new_alias = Alias(name=new_alias_name, source_files=new_urls)
                 self.aliases.append(new_alias)
 
