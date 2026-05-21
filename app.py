@@ -136,6 +136,15 @@ def create_app():
         run_path_param = request.args.get("run_path", "")
         return render_template("similar_aliases.html", run_path=run_path_param)
 
+    @app.route("/outliers/unbalanced-aliases", methods=["GET"])
+    def see_unbalanced_aliases():
+        """View aliases with fewer occurrences relative to the total number of alias occurrences."""
+        run_path_param = request.args.get("run_path")
+        if not run_path_param:
+            return redirect(url_for("visualisations_page"))
+
+        return render_template("unbalanced-aliases.html", run_path=run_path_param)
+
     @app.errorhandler(BadRequest)
     def handle_bad_request(e):
         return jsonify({"error": e.description}), 400

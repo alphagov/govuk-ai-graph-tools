@@ -1,0 +1,419 @@
+{% extends 'base.html' %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/metrics.css') }}" />
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<p>
+  Show entities with unbalanced aliases. Aliases are considered unbalanced if they have
+  significantly fewer occurrences, relative to the total number of alias occurrences for
+  that entity.
+</p>
+<div id="root"></div>
+{% endblock %}
+
+{% block scripts %}
+<script type="text/babel">
+  const { useState, useEffect, useMemo } = React;
+  const runPath = "{{ run_path|e }}";
+
+  {% raw %}
+  function MetricsDashboard() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialFilters = urlParams.getAll('q');
+
+    const initialEntityId = urlParams.get('entity_id');
+    const initialAliasId = urlParams.get('alias_id');
+
+    const [entities, setEntities] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    // Multiple search filters. 0th index is the main top-bar search.
+    const [filters, setFilters] = useState(initialFilters.length > 0 ? initialFilters : [""]);
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [selectedEntityId, setSelectedEntityId] = useState(initialEntityId || null);
+    const [selectedAliasId, setSelectedAliasId] = useState(initialAliasId || null);
+    const [sortConfig, setSortConfig] = useState({ key: 'entity', direction: 'asc' });
+    const [unbalancedThreshold, setUnbalancedThreshold] = useState(-0.5);
+
+    // Sync URL with filters
+    useEffect(() => {
+      const url = new URL(window.location);
+      url.searchParams.delete('q');
+      filters.forEach(f => {
+        if (f.trim()) {
+          url.searchParams.append('q', f.trim());
+        }
+      });
+      window.history.replaceState({}, '', url);
+      setCurrentPage(1);
+    }, [filters]);
+
+    // Fetch data
+    useEffect(() => {
+      fetch(`/graph-viewmodel${runPath ? `?run_path=${encodeURIComponent(runPath)}` : ''}`)
+        .then(res => {
+          if (!res.ok) throw new Error("Failed to fetch graph data");
+          return res.json();
+        })
+        .then(json => {
+          const processedEntities = [];
+          json.outliers.forEach(outlier => {
+              const row = {
+                entity_id: outlier.entity_id,
+                entity_label: outlier.entity_label,
+                aliases: outlier.alias_imbalance,
+                alias_count: outlier.alias_imbalance.length,
+                total_occurrence_count: outlier.alias_imbalance.reduce((sum, a) => sum + a.occurrence_count, 0),
+              };
+              processedEntities.push(row);
+            });
+          setEntities(processedEntities);
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error(err);
+          setError(err.message);
+          setLoading(false);
+        });
+    }, []);
+
+    useEffect(() => {
+      if (entities.length === 0) return;
+
+      if (selectedEntityId) {
+        const entity = entities.find(e => e.entity_id === selectedEntityId);
+        if (entity && entity.aliases.length > 0) {
+          if (!selectedAliasId || !entity.aliases.some(a => a.alias_id === selectedAliasId)) {
+            setSelectedAliasId(entity.aliases[0].alias_id);
+          }
+        } else {
+          setSelectedAliasId(null);
+        }
+      }
+    }, [selectedEntityId, entities]);
+
+    const handleExportCSV = () => {
+      const targetEntities = filteredEntities;
+
+      if (!targetEntities || targetEntities.length === 0) return;
+
+      const headers = ["ENTITY", "ALIASES", "ALIAS COUNT", "OCCURRENCE_COUNT"];
+      const rows = [headers.join(",")];
+
+      targetEntities.forEach(entity => {
+        const entityName = `"${(entity.entity_label || entity.entity_id).replace(/"/g, '""')}"`;
+        const aliasesLabels = entity.aliases.map(a => a.alias_label).join("; ");
+        const aliases = `"${aliasesLabels.replace(/"/g, '""')}"`;
+        const aliasCount = entity.aliases.length
+        const occurrenceCount = entity.aliases.reduce((sum, a) => sum + a.occurrence_count, 0);
+
+        rows.push([entityName, aliases, aliasCount, occurrenceCount]);
+      });
+
+      const csvContent = rows.join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "metrics_export.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+
+    const updateFilter = (index, val) => {
+      const newFilters = [...filters];
+      newFilters[index] = val;
+      setFilters(newFilters);
+    };
+
+    const addFilter = () => {
+      setFilters([...filters, ""]);
+    };
+
+    const removeFilter = (index) => {
+      const newFilters = filters.filter((_, i) => i !== index);
+      if (newFilters.length === 0) newFilters.push("");
+      setFilters(newFilters);
+    };
+
+    const filteredEntities = useMemo(() => {
+      const activeQueries = filters.map(f => f.toLowerCase().trim()).filter(f => f.length > 0);
+      let result = entities;
+
+      if (activeQueries.length > 0) {
+        result = result.filter(e => {
+          return activeQueries.every(query => {
+            const matchesEntity = (e.entity_label || "").toLowerCase().includes(query) ||
+                                  e.entity_id.toLowerCase().includes(query) ||
+                                  e.entity_id.split('__')[0].toLowerCase().includes(query);
+            const matchesAlias = e.aliases.some(a => (a.alias_label || "").toLowerCase().includes(query));
+            return matchesEntity || matchesAlias;
+          });
+        });
+      }
+
+      return result.filter(e => {
+        const hasUnbalanced = e.aliases.some(a => a.z_score <= unbalancedThreshold);
+        return hasUnbalanced;
+      });
+    }, [entities, filters]);
+
+    const sortedEntities = useMemo(() => {
+      let sortableItems = [...filteredEntities];
+      if (sortConfig !== null) {
+        sortableItems.sort((a, b) => {
+          let aValue, bValue;
+          switch (sortConfig.key) {
+            case 'entity':
+              aValue = (a.entity_label || a.entity_id).toLowerCase();
+              bValue = (b.entity_label || b.entity_id).toLowerCase();
+              break;
+            case 'aliases':
+              aValue = a.aliases.length > 0 ? (a.aliases[0].alias_label || "").toLowerCase() : "";
+              bValue = b.aliases.length > 0 ? (b.aliases[0].alias_label || "").toLowerCase() : "";
+              break;
+            case 'aliasCount':
+              aValue = a.alias_count;
+              bValue = b.alias_count;
+              break;
+            case 'occurrences':
+              aValue = a.total_occurrence_count;
+              bValue = b.total_occurrence_count;
+              break;
+            default:
+              aValue = 0;
+              bValue = 0;
+          }
+
+          if (aValue < bValue) {
+            return sortConfig.direction === 'asc' ? -1 : 1;
+          }
+          if (aValue > bValue) {
+            return sortConfig.direction === 'asc' ? 1 : -1;
+          }
+          return 0;
+        });
+      }
+      return sortableItems;
+    }, [filteredEntities, sortConfig]);
+
+    const totalPages = Math.ceil(sortedEntities.length / pageSize);
+    const startIndex = (currentPage - 1) * pageSize;
+    const paginatedEntities = sortedEntities.slice(startIndex, startIndex + pageSize);
+
+    if (loading) return <div className="loading-overlay">Loading metrics data...</div>;
+    if (error) return <div className="loading-overlay" className="error-text">Error: {error}</div>;
+
+    const selectedEntity = entities.find(e => e.entity_id === selectedEntityId);
+    const selectedAlias = selectedEntity?.aliases.find(a => a.alias_id === selectedAliasId);
+
+    const handleSort = (key) => {
+      let direction = 'asc';
+      if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+        direction = 'desc';
+      }
+      setSortConfig({ key, direction });
+    };
+
+    const renderSortIcon = (key) => {
+      if (!sortConfig || sortConfig.key !== key) return <span className="sort-icon-inactive">↕</span>;
+      return <span className="sort-icon-active">{sortConfig.direction === 'asc' ? '▲' : '▼'}</span>;
+    };
+
+    return (
+      <div className={`dashboard-content ${selectedEntityId ? 'has-selection' : ''}`}>
+
+        {/* Top Bar */}
+        <div className="top-bar">
+          <div className="search-section">
+            <div className="search-input-wrapper">
+              <svg className="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+              <input
+                type="search"
+                className="search-bar"
+                placeholder="Search entities or aliases..."
+                value={filters[0] || ""}
+                onChange={e => updateFilter(0, e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="actions-section">
+            <div className="entity-count">
+              <strong>{filteredEntities.length}</strong> of <strong>{entities.length}</strong> entities
+            </div>
+            <button className="btn btn-success" onClick={handleExportCSV}>
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+              Export CSV
+            </button>
+          </div>
+        </div>
+
+        {/* Filters Bar */}
+        <div className="filters-bar">
+          FILTERS
+          {filters.slice(1).map((filterVal, index) => (
+            <div key={index + 1} className="filter-pill">
+              <input
+                type="text"
+                value={filterVal}
+                onChange={e => updateFilter(index + 1, e.target.value)}
+                className="filter-input"
+                placeholder="Search query..."
+              />
+              <button onClick={() => removeFilter(index + 1)} className="filter-remove-btn">×</button>
+            </div>
+          ))}
+          <button className="add-filter-btn" onClick={addFilter}>+ Add filter</button>
+        </div>
+
+        {/* Master Table */}
+        <div className="table-container">
+          <table className="metrics-table">
+            <thead>
+              <tr>
+                <th className="col-sortable" onClick={() => handleSort('entity')}>
+                  ENTITY {renderSortIcon('entity')}
+                </th>
+                <th>
+                  ALIASES
+                </th>
+                <th className="col-sortable" onClick={() => handleSort('aliasCount')}>
+                  ALIAS COUNT {renderSortIcon('aliasCount')}
+                </th>
+                <th className="col-sortable" onClick={() => handleSort('occurrences')}>
+                  OCCURRENCES {renderSortIcon('occurrences')}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedEntities.map(entity => {
+                const isSelected = selectedEntityId === entity.entity_id;
+
+                let currentSelectedAlias = null;
+                if (isSelected) {
+                  currentSelectedAlias = entity.aliases.find(a => a.alias_id === selectedAliasId);
+                  if (!currentSelectedAlias && entity.aliases.length > 0) {
+                    currentSelectedAlias = entity.aliases[0];
+                  }
+                }
+
+                return (
+                  <React.Fragment key={entity.entity_id}>
+                    <tr
+                      className={isSelected ? 'selected' : ''}
+                      onClick={() => setSelectedEntityId(isSelected ? null : entity.entity_id)}
+                    >
+                      <td>
+                        <div className="entity-name">{entity.entity_label || entity.entity_id}</div>
+                        <div className="entity-id">{entity.entity_id}</div>
+                      </td>
+                      <td>
+                        <div className="aliases-container">
+                          {entity.aliases.slice(0, 3).map((alias, idx) => (
+                            <span key={idx} className="badge badge-alias">{alias.alias_label}</span>
+                          ))}
+                          {entity.aliases.length > 3 && (
+                            <span className="alias-more-count">+{entity.aliases.length - 3} more</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="text-center">{entity.alias_count}</td>
+                      <td className="text-center">{entity.total_occurrence_count}</td>
+                    </tr>
+                    {isSelected && (
+                      <tr className="expanded-detail-row">
+                        <td colSpan="6" className="expanded-detail-cell" onClick={e => e.stopPropagation()}>
+                          <div className="detail-pane">
+                            <div className="detail-sidebar">
+                              <div className="detail-header">Aliases</div>
+                              <div className="detail-content scrollable-content">
+                                {entity.aliases.map(alias => (
+                                  <div
+                                    key={alias.alias_id}
+                                    className={`alias-list-item${selectedAliasId === alias.alias_id ? ' active' : ''}${alias.z_score <= unbalancedThreshold ? ' unbalanced' : ' balanced'}`}
+                                    onClick={() => setSelectedAliasId(alias.alias_id)}
+                                  >
+                                    <div className="alias-name">{alias.z_score <= unbalancedThreshold ? '⚠️ ' : ''}{alias.alias_label}</div>
+                                    <div className="alias-list-count">{alias.occurrence_count} occurrences</div>
+                                    {/* <div className="alias-list-count">{alias.z_score} Z-Score</div> */}
+                                  </div>
+                                ))}
+                                {entity.aliases.length === 0 && (
+                                  <div className="empty-state-text">No aliases found.</div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="detail-main"></div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+              {paginatedEntities.length === 0 && (
+                <tr>
+                  <td colSpan="6" className="empty-state-row">
+                    No entities match the current filters.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination Controls */}
+        {filteredEntities.length > 0 && (
+          <div className="pagination-container">
+            <div className="pagination-info">
+              Showing {startIndex + 1} to {Math.min(startIndex + pageSize, filteredEntities.length)} of {filteredEntities.length} entities
+            </div>
+            <div className="pagination-controls">
+              <button
+                className="btn btn-outline"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => prev - 1)}
+              >
+                Previous
+              </button>
+              <span className="page-text">Page {currentPage} of {totalPages || 1}</span>
+              <button
+                className="btn btn-outline"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage(prev => prev + 1)}
+              >
+                Next
+              </button>
+            </div>
+            <div>
+              <select
+                className="search-bar page-select"
+                value={pageSize}
+                onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+              >
+                <option value={10}>10 per page</option>
+                <option value={20}>20 per page</option>
+                <option value={50}>50 per page</option>
+              </select>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const root = ReactDOM.createRoot(document.getElementById("root"));
+  root.render(<MetricsDashboard />);
+  {% endraw %}
+</script>
+{% endblock %}
