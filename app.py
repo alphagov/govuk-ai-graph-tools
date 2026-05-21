@@ -134,7 +134,7 @@ def create_app():
     def see_similar_aliases():
         """View aliases that are (syntactically) similar to other aliases of the same entity."""
         run_path_param = request.args.get("run_path", "")
-        return render_template("similar_aliases.html", run_path=run_path_param)
+        return render_template("similar-aliases.html", run_path=run_path_param)
 
     @app.route("/outliers/unbalanced-aliases", methods=["GET"])
     def see_unbalanced_aliases():
