@@ -44,6 +44,15 @@ def test_graph_output_validation():
     data = {
         "nodes": [{"data": {"id": "e1", "label": "Entity 1", "type": "entity"}}],
         "edges": [{"data": {"source": "e1", "target": "a1", "label": "Alias"}}],
+        "outliers": [
+            {
+                "entity_id": "e1",
+                "entity_label": "Entity 1",
+                "alias_imbalance": [
+                    {"alias_id": "a1", "alias_label": "Alias", "occurrence_count": 1}
+                ],
+            }
+        ],
     }
     validated = GraphOutput.model_validate(data)
     assert len(validated.nodes) == 1

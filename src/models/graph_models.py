@@ -149,6 +149,9 @@ class GraphOutput(BaseModel):
     outliers: List[EntityOutlier] = Field(default_factory=list)
 
     def model_post_init(self, __context: Any) -> None:
+        if not self.outliers:
+            return
+
         valid_entity_ids = set()
         valid_node_ids = set()
 
@@ -169,10 +172,4 @@ class GraphOutput(BaseModel):
             edge
             for edge in self.edges
             if edge.data.source in valid_node_ids and edge.data.target in valid_node_ids
-        ]
-
-        self.relationships = [
-            rel
-            for rel in self.relationships
-            if rel.from_ in valid_entity_ids and rel.to in valid_entity_ids
         ]
