@@ -69,13 +69,13 @@
                 {% if request.path == url_for('metrics_page') %}
                 <li class="govuk-service-navigation__item govuk-service-navigation__item--active">
                   <a class="govuk-service-navigation__link" href="{{ url_for('metrics_page', run_path=run_path) }}" aria-current="true">
-                    <strong class="govuk-service-navigation__active-fallback">Metrics</strong>
+                    <strong class="govuk-service-navigation__active-fallback">Table</strong>
                   </a>
                 </li>
                 {% else %}
                 <li class="govuk-service-navigation__item">
                   <a class="govuk-service-navigation__link" href="{{ url_for('metrics_page', run_path=run_path) }}">
-                    Metrics
+                    Table
                   </a>
                 </li>
                 {% endif %}
