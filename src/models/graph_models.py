@@ -1,3 +1,4 @@
+import re
 from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -18,6 +19,36 @@ class Entity(BaseModel):
     description: Optional[str] = None
 
     model_config = ConfigDict(extra="allow")
+
+    def model_post_init(self, __context: Any) -> None:
+        if self.label:
+            new_alias_name = " ".join(
+                word.lower() for word in re.split(r"(?=[A-Z])", self.label) if word
+            )
+
+            def _slugify(text: str) -> str:
+                return re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")
+
+            new_alias_slug = new_alias_name
+            existing_alias = next((a for a in self.aliases if a.name == new_alias_slug), None)
+
+            source_urls_val = self.properties.get("sourceUrls", "")
+            if isinstance(source_urls_val, list):
+                new_urls = [
+                    url.strip() for url in source_urls_val if isinstance(url, str) and url.strip()
+                ]
+            elif isinstance(source_urls_val, str):
+                new_urls = (
+                    [url.strip() for url in source_urls_val.split(",") if url.strip()]
+                    if source_urls_val
+                    else []
+                )
+            else:
+                new_urls = []
+
+            if not existing_alias:
+                new_alias = Alias(name=new_alias_name, source_files=new_urls)
+                self.aliases.append(new_alias)
 
 
 class Relationship(BaseModel):
