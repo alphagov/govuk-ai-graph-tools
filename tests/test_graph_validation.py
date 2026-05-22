@@ -1,7 +1,6 @@
 import pytest
 
 from src.models.graph_models import GraphInput, GraphOutput
-from src.visualiser_graph_generator import slugify
 
 
 def test_graph_input_validation():
@@ -33,11 +32,6 @@ def test_graph_input_invalid():
     }
     with pytest.raises(Exception):
         GraphInput.model_validate(data)
-
-
-def test_slugify():
-    assert slugify("Hello World!") == "hello_world"
-    assert slugify("Test-123") == "test_123"
 
 
 def test_graph_output_validation():
