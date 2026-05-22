@@ -35,7 +35,6 @@
     const [pageSize, setPageSize] = useState(10);
     const [selectedEntityId, setSelectedEntityId] = useState(initialEntityId || null);
     const [selectedAliasId, setSelectedAliasId] = useState(initialAliasId || null);
-    const [checkedEntityIds, setCheckedEntityIds] = useState(new Set());
     const [sortConfig, setSortConfig] = useState({ key: 'entity', direction: 'asc' });
 
     // Sync URL with filters
@@ -120,9 +119,7 @@
     }, [selectedEntityId, entities]);
 
     const handleExportCSV = () => {
-      const targetEntities = checkedEntityIds.size > 0 
-        ? filteredEntities.filter(e => checkedEntityIds.has(e.data.id))
-        : filteredEntities;
+      const targetEntities = filteredEntities;
         
       if (!targetEntities || targetEntities.length === 0) return;
       
@@ -277,7 +274,7 @@
             </button>
             <button className="btn btn-success" onClick={handleExportCSV}>
               <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-              Export CSV {checkedEntityIds.size > 0 ? `(${checkedEntityIds.size})` : ''}
+              Export CSV
             </button>
           </div>
         </div>
@@ -305,21 +302,6 @@
           <table className="metrics-table">
             <thead>
               <tr>
-                <th className="col-checkbox">
-                  <input 
-                    type="checkbox" 
-                    checked={paginatedEntities.length > 0 && paginatedEntities.every(e => checkedEntityIds.has(e.data.id))}
-                    onChange={(e) => {
-                      const newChecked = new Set(checkedEntityIds);
-                      if (e.target.checked) {
-                        paginatedEntities.forEach(ent => newChecked.add(ent.data.id));
-                      } else {
-                        paginatedEntities.forEach(ent => newChecked.delete(ent.data.id));
-                      }
-                      setCheckedEntityIds(newChecked);
-                    }}
-                  />
-                </th>
                 <th className="col-sortable" onClick={() => handleSort('entity')}>
                   ENTITY {renderSortIcon('entity')}
                 </th>
@@ -357,21 +339,6 @@
                       className={isSelected ? 'selected' : ''}
                       onClick={() => setSelectedEntityId(isSelected ? null : entity.data.id)}
                     >
-                      <td className="text-center" onClick={e => e.stopPropagation()}>
-                        <input 
-                          type="checkbox" 
-                          checked={checkedEntityIds.has(entity.data.id)}
-                          onChange={(e) => {
-                            const newChecked = new Set(checkedEntityIds);
-                            if (e.target.checked) {
-                              newChecked.add(entity.data.id);
-                            } else {
-                              newChecked.delete(entity.data.id);
-                            }
-                            setCheckedEntityIds(newChecked);
-                          }}
-                        />
-                      </td>
                       <td>
                         <div className="entity-name">{entity.data.label || entity.data.id}</div>
                       </td>
