@@ -130,6 +130,15 @@ def create_app():
             return jsonify({"error": "Job ID not found"}), 404
         return jsonify(status_info), 200
 
+    @app.route("/outliers", methods=["GET"])
+    def outliers_page():
+        """View a page to select the type of outlier to display."""
+        run_path_param = request.args.get("run_path")
+        if not run_path_param:
+            return redirect(url_for("visualisations_page"))
+
+        return render_template("outliers.html", run_path=run_path_param)
+
     @app.route("/outliers/similar-aliases", methods=["GET"])
     def see_similar_aliases():
         """View aliases that are (syntactically) similar to other aliases of the same entity."""

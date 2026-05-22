@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="govuk-width-container">
+  <h1 class="govuk-heading-l">Outlier filters</h1>
+  <ul class="govuk-list govuk-list--spaced">
+    <li>
+      <h2 class="govuk-heading-m"><a class="govuk-link" href="{{ url_for('see_unbalanced_aliases', run_path=run_path) }}">Unbalanced terms</a></h2>
+      <p class="govuk-body">Show terms that are unbalanced from a usage perspective.</p>
+    </li>
+    <li>
+      <h2 class="govuk-heading-m"><a class="govuk-link" href="{{ url_for('see_similar_aliases', run_path=run_path) }}">Identify misspelled terms</a></h2>
+      <p class="govuk-body">Highlight terms that have similar wording, indicating possible misspellings or room for standardisation.</p>
+    </li>
+  </ul>
+</div>
+{% endblock %}
