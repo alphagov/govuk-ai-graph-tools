@@ -262,7 +262,7 @@ tr.selected td:first-child {
 }
 
 .detail-sidebar {
-  width: 300px;
+  width: 400px;
   border-right: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
@@ -314,6 +314,14 @@ tr.selected td:first-child {
   font-weight: 600;
   color: #111827;
   padding-left: 13px;
+}
+
+.alias-list-item.unbalanced {
+  background-color: #f4d7d7
+}
+
+.alias-list-item.balanced, .alias-list-item.balanced .alias-list-count {
+  color: #cecece
 }
 
 .alias-list-count {
