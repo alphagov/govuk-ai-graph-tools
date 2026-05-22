@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 import json
 import logging
 import re
@@ -30,13 +31,6 @@ from src.utils.alias_distance import calculate_alias_distance
 
 
 logger = logging.getLogger(__name__)
-
-
-def slugify(text: str) -> str:
-    """Simple slugify for node IDs."""
-    text = text.lower()
-    text = re.sub(r"[^a-z0-9]+", "_", text)
-    return text.strip("_")
 
 
 def build_registries(entities: List[Entity]) -> Dict[str, Any]:
@@ -161,6 +155,7 @@ def map_findings_to_entities(
 ) -> Dict[str, Dict[str, List[Occurrence]]]:
     """Groups findings by entity and alias with highlighting and links."""
     results: Dict[str, Dict[str, List[Occurrence]]] = defaultdict(lambda: defaultdict(list))
+    seen_occurrences = set()
 
     for finding in raw_findings:
         uri = finding["source"]
@@ -171,10 +166,13 @@ def map_findings_to_entities(
         if uri in registry:
             for ent in registry[uri]["entities"]:
                 if any(a.name == keyword for a in ent.aliases):
-                    occurrence = Occurrence(
-                        link=link, context=highlight_occurrence(content, keyword)
-                    )
-                    results[ent.canonical_key][keyword].append(occurrence)
+                    context = highlight_occurrence(content, keyword)
+                    occurrence_key = (ent.canonical_key, keyword, link, context)
+
+                    if occurrence_key not in seen_occurrences:
+                        seen_occurrences.add(occurrence_key)
+                        occurrence = Occurrence(link=link, context=context)
+                        results[ent.canonical_key][keyword].append(occurrence)
 
     return results
 
@@ -199,16 +197,16 @@ def build_node_structure(
         for alias_obj in ent.aliases:
             alias = alias_obj.name
             occurrences = entity_results[ent_id].get(alias, [])
-            alias_id = f"{ent_id}__{slugify(alias)}"
+            alias_hash = hashlib.md5(alias.encode("utf-8")).hexdigest()
+            alias_id = f"{ent_id}__{alias_hash}"
 
             if alias_id not in alias_map:
                 alias_map[alias_id] = NodeData(
                     id=alias_id, label=alias, type="alias", occurrences=[]
                 )
-
-            occ = alias_map[alias_id].occurrences
-            if occurrences and occ is not None:
-                occ.extend(occurrences)
+                occ = alias_map[alias_id].occurrences
+                if occurrences and occ is not None:
+                    occ.extend(occurrences)
 
         # Add the deduplicated alias nodes and their edges
         unique_aliases = list(alias_map.values())
