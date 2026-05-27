@@ -135,18 +135,17 @@
         
       if (!targetEntities || targetEntities.length === 0) return;
       
-      const headers = ["ENTITY", "CATEGORY", "ALIASES", "ALIAS COUNT", "OCCURRENCES"];
+      const headers = ["ENTITY", "ALIASES", "ALIAS COUNT", "OCCURRENCES"];
       const rows = [headers.join(",")];
-      
+
       targetEntities.forEach(entity => {
         const entityName = `"${(entity.data.label || entity.data.id).replace(/"/g, '""')}"`;
-        const category = `"${(entity.data.id.split('__')[0] || '').replace(/"/g, '""')}"`;
         const aliasesLabels = entity.aliases.map(a => a.data.label).join("; ");
         const aliases = `"${aliasesLabels.replace(/"/g, '""')}"`;
         const aliasCount = entity.aliasCount;
         const occurrences = entity.totalOccurrences;
-        
-        rows.push([entityName, category, aliases, aliasCount, occurrences].join(","));
+
+        rows.push([entityName, aliases, aliasCount, occurrences].join(","));
       });
       
       const csvContent = rows.join("\n");
@@ -199,10 +198,6 @@
             case 'entity':
               aValue = (a.data.label || a.data.id).toLowerCase();
               bValue = (b.data.label || b.data.id).toLowerCase();
-              break;
-            case 'category':
-              aValue = a.data.id.split('__')[0].toLowerCase();
-              bValue = b.data.id.split('__')[0].toLowerCase();
               break;
             case 'aliases':
               aValue = a.aliases.length > 0 ? (a.aliases[0].data.label || "").toLowerCase() : "";
@@ -313,9 +308,6 @@
                 <th className="col-sortable" onClick={() => handleSort('entity')}>
                   ENTITY {renderSortIcon('entity')}
                 </th>
-                <th className="col-sortable" onClick={() => handleSort('category')}>
-                  CATEGORY {renderSortIcon('category')}
-                </th>
                 <th className="col-sortable" onClick={() => handleSort('aliases')}>
                   ALIASES {renderSortIcon('aliases')}
                 </th>
@@ -330,8 +322,7 @@
             <tbody>
               {paginatedEntities.map(entity => {
                 const isSelected = selectedEntityId === entity.data.id;
-                const category = entity.data.id.split('__')[0];
-                
+
                 let currentSelectedAlias = null;
                 if (isSelected) {
                   currentSelectedAlias = entity.aliases.find(a => a.data.id === selectedAliasId);
@@ -349,9 +340,6 @@
                     >
                       <td>
                         <div className="entity-name">{entity.data.label || entity.data.id}</div>
-                      </td>
-                      <td>
-                        <span className="badge badge-category">{category}</span>
                       </td>
                       <td>
                         <div className="aliases-container">
