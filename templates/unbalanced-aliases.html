@@ -58,7 +58,6 @@
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [selectedEntityId, setSelectedEntityId] = useState(initialEntityId || null);
-    const [selectedAliasId, setSelectedAliasId] = useState(initialAliasId || null);
     const [sortConfig, setSortConfig] = useState({ key: 'entity', direction: 'asc' });
     const [unbalancedThreshold, setUnbalancedThreshold] = useState(-0.5);
 
@@ -103,21 +102,6 @@
           setLoading(false);
         });
     }, []);
-
-    useEffect(() => {
-      if (entities.length === 0) return;
-
-      if (selectedEntityId) {
-        const entity = entities.find(e => e.entity_id === selectedEntityId);
-        if (entity && entity.aliases.length > 0) {
-          if (!selectedAliasId || !entity.aliases.some(a => a.alias_id === selectedAliasId)) {
-            setSelectedAliasId(entity.aliases[0].alias_id);
-          }
-        } else {
-          setSelectedAliasId(null);
-        }
-      }
-    }, [selectedEntityId, entities]);
 
     const handleExportCSV = () => {
       const targetEntities = filteredEntities;
@@ -232,7 +216,6 @@
     if (error) return <div className="loading-overlay" className="error-text">Error: {error}</div>;
 
     const selectedEntity = entities.find(e => e.entity_id === selectedEntityId);
-    const selectedAlias = selectedEntity?.aliases.find(a => a.alias_id === selectedAliasId);
 
     const handleSort = (key) => {
       let direction = 'asc';
@@ -323,7 +306,7 @@
                   ENTITY {renderSortIcon('entity')}
                 </th>
                 <th>
-                  ALIASES
+                  UNBALANCED ALIASES
                 </th>
                 <th className="col-sortable" onClick={() => handleSort('aliasCount')}>
                   ALIAS COUNT {renderSortIcon('aliasCount')}
@@ -336,14 +319,7 @@
             <tbody>
               {paginatedEntities.map(entity => {
                 const isSelected = selectedEntityId === entity.entity_id;
-
-                let currentSelectedAlias = null;
-                if (isSelected) {
-                  currentSelectedAlias = entity.aliases.find(a => a.alias_id === selectedAliasId);
-                  if (!currentSelectedAlias && entity.aliases.length > 0) {
-                    currentSelectedAlias = entity.aliases[0];
-                  }
-                }
+                const unbalancedAliases = entity.aliases.filter(a => a.z_score <= unbalancedThreshold);
 
                 return (
                   <React.Fragment key={entity.entity_id}>
@@ -356,11 +332,11 @@
                       </td>
                       <td>
                         <div className="aliases-container">
-                          {entity.aliases.slice(0, 3).map((alias, idx) => (
-                            <span key={idx} className="badge badge-alias">{alias.alias_label}</span>
+                          {unbalancedAliases.slice(0, 3).map((alias, idx) => (
+                            <span key={idx} className="badge badge-alias badge-unbalanced">{alias.alias_label}</span>
                           ))}
-                          {entity.aliases.length > 3 && (
-                            <span className="alias-more-count">+{entity.aliases.length - 3} more</span>
+                          {unbalancedAliases.length > 3 && (
+                            <span className="alias-more-count">+{unbalanacedAliases.length - 3} more</span>
                           )}
                         </div>
                       </td>
@@ -373,14 +349,15 @@
                           <div className="detail-pane">
                             <div className="detail-sidebar">
                               <div className="detail-header">Aliases</div>
+                            </div>
+                            <div className="detail-main">
                               <div className="detail-content scrollable-content">
                                 {entity.aliases.map(alias => (
                                   <div
                                     key={alias.alias_id}
-                                    className={`alias-list-item${selectedAliasId === alias.alias_id ? ' active' : ''}${alias.z_score <= unbalancedThreshold ? ' unbalanced' : ' balanced'}`}
-                                    onClick={() => setSelectedAliasId(alias.alias_id)}
+                                    className={`alias-list-item${alias.z_score <= unbalancedThreshold ? ' unbalanced' : ' balanced'}`}
                                   >
-                                    <div className="alias-name">{alias.z_score <= unbalancedThreshold ? '⚠️ ' : ''}{alias.alias_label}</div>
+                                    <div className="alias-name">{alias.alias_label}</div>
                                     <div className="alias-list-count">{alias.occurrence_count} occurrences</div>
                                     {/* <div className="alias-list-count">{alias.z_score} Z-Score</div> */}
                                   </div>
@@ -390,7 +367,6 @@
                                 )}
                               </div>
                             </div>
-                            <div className="detail-main"></div>
                           </div>
                         </td>
                       </tr>

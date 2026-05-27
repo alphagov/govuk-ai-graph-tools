@@ -231,6 +231,10 @@ tr.selected td:first-child {
   margin-bottom: 6px;
 }
 
+.badge-unbalanced::before {
+  content: "⚠️ ";
+}
+
 .aliases-container {
   display: flex;
   flex-wrap: wrap;
@@ -316,11 +320,11 @@ tr.selected td:first-child {
 }
 
 .alias-list-item.unbalanced {
-  background-color: #f4d7d7
+  background-color: #f4d7d7;
 }
 
-.alias-list-item.balanced, .alias-list-item.balanced .alias-list-count {
-  color: #cecece
+.alias-list-item.unbalanced .alias-name::before {
+  content: "⚠️ ";
 }
 
 .alias-list-count {
@@ -474,7 +478,6 @@ tr.selected td:first-child {
   padding: 16px;
 }
 
-/* Similarity Threshold Slider */
 .threshold-slider-container {
   display: flex;
   align-items: center;
