@@ -19,7 +19,7 @@
         <a class="govuk-breadcrumbs__link" href="{{ url_for('outliers_page', run_path=run_path) }}">Outliers</a>
       </li>
       <li class="govuk-breadcrumbs__list-item">
-        Unbalanced terms
+        Imbalanced terms
       </li>
     </ol>
   </nav>
@@ -27,9 +27,9 @@
 
 {% block content %}
 <div class="govuk-width-container">
-  <h1 class="govuk-heading-m">Unbalanced terms</h1>
+  <h1 class="govuk-heading-m">Imbalanced terms</h1>
   <p class="govuk-body">
-    Where one or more aliases for an entity are used significantly less often than the others. For example, if "Creative Worker Visa" appears 90 times but "Creative Worker Route" appears only 3 times, it is considered unbalanced.
+    Where one or more aliases for an entity are used significantly less often than the others. For example, if "Creative Worker Visa" appears 90 times but "Creative Worker Route" appears only 3 times, it is considered imbalanced.
   </p>
 </div>
 <div id="root"></div>
@@ -278,7 +278,7 @@
           ))}
           <button className="add-filter-btn" onClick={addFilter}>+ Add filter</button>
           <div className="threshold-slider-container">
-            <label htmlFor="unbalanced-threshold">Unbalanced scale:</label>
+            <label htmlFor="unbalanced-threshold">Imbalanced scale:</label>
             <div className="slider-with-labels">
               <input
                 id="unbalanced-threshold"
