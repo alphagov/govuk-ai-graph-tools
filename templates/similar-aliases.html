@@ -34,6 +34,7 @@
 <script type="text/babel">
   const { useState, useEffect, useMemo } = React;
   const runPath = "{{ run_path|e }}";
+  const metrics_path = "{{ url_for('metrics_page', run_path=run_path) }}";
 
   {% raw %}
   function SimilarAliasesDashboard() {
@@ -293,7 +294,9 @@
                   <React.Fragment key={entity.entity_id + "__" + entity.alias_id}>
                     <tr>
                       <td>
-                        <div className="entity-name">{entity.entity_label || entity.entity_id}</div>
+                        <div className="entity-name">
+                          {entity.entity_label} <a href={`${metrics_path}&q=${entity.entity_label}`}><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path></svg></a>
+                        </div>
                       </td>
                       <td>
                         <div>{entity.alias_label || entity.alias_id}</div>
