@@ -14,7 +14,7 @@
         <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
         {% endif %}
         {% set ns.current_domain = domain %}
-        <h2 class="govuk-heading-m">{{ domain }}</h2>
+        <h2 class="govuk-heading-m">{{ domain | replace('_', ' ') | title }}</h2>
         <ul class="govuk-list govuk-list--spaced">
       {% endif %}
       {% set run_parts = run_id.split('-') %}
