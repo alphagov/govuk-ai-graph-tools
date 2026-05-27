@@ -17,8 +17,11 @@
         <h2 class="govuk-heading-m">{{ domain }}</h2>
         <ul class="govuk-list govuk-list--spaced">
       {% endif %}
+      {% set run_parts = run_id.split('-') %}
+      {% set run_date = run_parts[1][:4] ~ '-' ~ run_parts[1][4:6] ~ '-' ~ run_parts[1][6:] %}
+      {% set run_number = run_parts[2] %}
       <li>
-        <a class="govuk-link" href="{{ url_for('graph_page', run_path=v.run_path) }}">{{ run_id }}</a>
+        <a class="govuk-link" href="{{ url_for('graph_page', run_path=v.run_path) }}">Run #{{ run_number }} for {{ run_date }}</a>
       </li>
     {% endfor %}
     </ul>
