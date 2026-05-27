@@ -2,7 +2,9 @@
 
 {% block content %}
 <div class="govuk-width-container">
-  <h1 class="govuk-heading-l">Available knowledge graphs per domain</h1>
+  <h1 class="govuk-heading-l">Select a knowledge graph run to explore</h1>
+  <p class="govuk-body">This tool helps you review and quality-check the entities, aliases, and relationships extracted from <a class="govuk-link" href="https://www.gov.uk">GOV.UK</a> content by the <a class="govuk-link" href="https://govuk-ai-accelerator-app.integration.publishing.service.gov.uk/">Ontology Generator</a>.</p>
+  <p class="govuk-body">Each run represents a snapshot of a domain at a point in time. Select a run below to explore its entities, check for potential issues such as unbalanced or near-identical aliases, and review how content terms are connected.</p>
   {% if visualisations %}
     {% set ns = namespace(current_domain=None) %}
     {% for v in visualisations %}
