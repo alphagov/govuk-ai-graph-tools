@@ -7,6 +7,24 @@
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 {% endblock %}
 
+{% block breadcrumbs %}
+  {% set domain = run_path.split('/')[0] %}
+  {% set run_id = run_path.split('/')[1] %}
+  <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+      <li class="govuk-breadcrumbs__list-item">
+        <a class="govuk-breadcrumbs__link" href="{{ url_for('graph_page', run_path=run_path) }}">{{ domain }} / {{ run_id }}</a>
+      </li>
+      <li class="govuk-breadcrumbs__list-item">
+        <a class="govuk-breadcrumbs__link" href="{{ url_for('outliers_page', run_path=run_path) }}">Outliers</a>
+      </li>
+      <li class="govuk-breadcrumbs__list-item">
+        Unbalanced terms
+      </li>
+    </ol>
+  </nav>
+{% endblock %}
+
 {% block content %}
 <p>
   Show entities with unbalanced aliases. Aliases are considered unbalanced if they have

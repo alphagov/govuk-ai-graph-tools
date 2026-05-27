@@ -7,6 +7,18 @@
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 {% endblock %}
 
+{% block breadcrumbs %}
+  {% set domain = run_path.split('/')[0] %}
+  {% set run_id = run_path.split('/')[1] %}
+  <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+      <li class="govuk-breadcrumbs__list-item">
+        {{domain }} / {{ run_id }}
+      </li>
+    </ol>
+  </nav>
+{% endblock %}
+
 {% block content %}
 <div id="root"></div>
 {% endblock %}
