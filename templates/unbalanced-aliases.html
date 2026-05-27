@@ -19,18 +19,19 @@
         <a class="govuk-breadcrumbs__link" href="{{ url_for('outliers_page', run_path=run_path) }}">Outliers</a>
       </li>
       <li class="govuk-breadcrumbs__list-item">
-        Unbalanced terms
+        Unbalanced Terms
       </li>
     </ol>
   </nav>
 {% endblock %}
 
 {% block content %}
-<p>
-  Show entities with unbalanced aliases. Aliases are considered unbalanced if they have
-  significantly fewer occurrences, relative to the total number of alias occurrences for
-  that entity.
-</p>
+<div class="govuk-width-container">
+  <h1 class="govuk-heading-m">Unbalanced Terms</h1>
+  <p class="govuk-body">
+    Where one or more aliases for an entity are used significantly less often than the others. For example, if "Creative Worker Visa" appears 90 times but "Creative Worker Route" appears only 3 times, it is considered unbalanced.
+  </p>
+</div>
 <div id="root"></div>
 {% endblock %}
 

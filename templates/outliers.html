@@ -17,15 +17,27 @@
 
 {% block content %}
 <div class="govuk-width-container">
-  <h1 class="govuk-heading-l">Outlier filters</h1>
-  <ul class="govuk-list govuk-list--spaced">
-    <li>
-      <h2 class="govuk-heading-m"><a class="govuk-link" href="{{ url_for('see_unbalanced_aliases', run_path=run_path) }}">Unbalanced terms</a></h2>
-      <p class="govuk-body">Show terms that are unbalanced from a usage perspective.</p>
+  <h1 class="govuk-heading-l govuk-!-margin-bottom-2">Outliers</h1>
+  <p class="govuk-body govuk-!-margin-bottom-7">Filter entities or aliases that look unusual compared to the rest. Outliers may indicate errors, inconsistencies, or gaps in content.</p>
+
+  <h2 class="govuk-heading-m">Choose a filter:</h2>
+
+  <ul class="gem-c-cards__list">
+    <li class="gem-c-cards__list-item">
+      <div class="gem-c-cards__list-item-wrapper">
+        <h2 class="gem-c-cards__sub-heading govuk-heading-s">
+          <a class="gem-c-cards__link govuk-link" href="{{ url_for('see_unbalanced_aliases', run_path=run_path) }}">Unbalanced Terms</a>
+        </h2>
+        <p class="gem-c-cards__description govuk-body">Where one or more aliases for an entity are used significantly less often than the others. For example, if "Creative Worker Visa" appears 90 times but "Creative Worker Route" appears only 3 times, it is considered unbalanced.</p>
+      </div>
     </li>
-    <li>
-      <h2 class="govuk-heading-m"><a class="govuk-link" href="{{ url_for('see_similar_aliases', run_path=run_path) }}">Identify misspelled terms</a></h2>
-      <p class="govuk-body">Highlight terms that have similar wording, indicating possible misspellings or room for standardisation.</p>
+    <li class="gem-c-cards__list-item">
+      <div class="gem-c-cards__list-item-wrapper">
+        <h2 class="gem-c-cards__sub-heading govuk-heading-s">
+          <a class="gem-c-cards__link govuk-link" href="{{ url_for('see_similar_aliases', run_path=run_path) }}">Near Identical Terms</a>
+        </h2>
+        <p class="gem-c-cards__description govuk-body">Aliases with very similar wording that may indicate a misspelling or an opportunity to standardise. For example, between "Seasonal Worker Visa" and "Seasonal Workers Visa", one may be an error or in active use inconsistently.</p>
+      </div>
     </li>
   </ul>
 </div>
