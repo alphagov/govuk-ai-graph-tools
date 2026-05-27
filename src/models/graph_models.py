@@ -127,6 +127,9 @@ class EntityOutlier(BaseModel):
         self.alias_imbalance = [stat for stat in self.alias_imbalance if stat.occurrence_count > 0]
         self.aliases = [alias for alias in self.aliases if alias.occurrence_count > 0]
 
+        if len(self.aliases) == 1:
+            self.aliases[0].similar_aliases = []
+
         counts = [stat.occurrence_count for stat in self.alias_imbalance]
         if len(counts) > 1:
             mean = statistics.mean(counts)
