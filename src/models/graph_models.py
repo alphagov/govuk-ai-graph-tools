@@ -127,8 +127,15 @@ class EntityOutlier(BaseModel):
         self.alias_imbalance = [stat for stat in self.alias_imbalance if stat.occurrence_count > 0]
         self.aliases = [alias for alias in self.aliases if alias.occurrence_count > 0]
 
-        if len(self.aliases) == 1:
-            self.aliases[0].similar_aliases = []
+        valid_alias_ids = {alias.id for alias in self.aliases}
+        for alias in self.aliases:
+            alias.similar_aliases = [
+                similar for similar in alias.similar_aliases if similar.id in valid_alias_ids
+            ]
+
+        if len(self.aliases) <= 1:
+            for alias in self.aliases:
+                alias.similar_aliases = []
 
         counts = [stat.occurrence_count for stat in self.alias_imbalance]
         if len(counts) > 1:
