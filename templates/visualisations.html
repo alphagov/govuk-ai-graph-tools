@@ -2,7 +2,9 @@
 
 {% block content %}
 <div class="govuk-width-container">
-  <h1 class="govuk-heading-l">Available knowledge graphs per domain</h1>
+  <h1 class="govuk-heading-l">Select a knowledge graph run to explore</h1>
+  <p class="govuk-body">This tool helps you review and quality-check the entities, aliases, and relationships extracted from <a class="govuk-link" href="https://www.gov.uk">GOV.UK</a> content by the <a class="govuk-link" href="https://govuk-ai-accelerator-app.integration.publishing.service.gov.uk/">Ontology Generator</a>.</p>
+  <p class="govuk-body">Each run represents a snapshot of a domain at a point in time. Select a run below to explore its entities, check for potential issues such as unbalanced or near-identical aliases, and review how content terms are connected.</p>
   {% if visualisations %}
     {% set ns = namespace(current_domain=None) %}
     {% for v in visualisations %}
@@ -14,11 +16,14 @@
         <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
         {% endif %}
         {% set ns.current_domain = domain %}
-        <h2 class="govuk-heading-m">{{ domain }}</h2>
+        <h2 class="govuk-heading-m">{{ domain | replace('_', ' ') | title }}</h2>
         <ul class="govuk-list govuk-list--spaced">
       {% endif %}
+      {% set run_parts = run_id.split('-') %}
+      {% set run_date = run_parts[1][:4] ~ '-' ~ run_parts[1][4:6] ~ '-' ~ run_parts[1][6:] %}
+      {% set run_number = run_parts[2] %}
       <li>
-        <a class="govuk-link" href="{{ url_for('graph_page', run_path=v.run_path) }}">{{ run_id }}</a>
+        <a class="govuk-link" href="{{ url_for('graph_page', run_path=v.run_path) }}">Run #{{ run_number }} for {{ run_date }}</a>
       </li>
     {% endfor %}
     </ul>
