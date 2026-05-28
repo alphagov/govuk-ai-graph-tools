@@ -60,7 +60,7 @@
     const [pageSize, setPageSize] = useState(10);
     const [selectedEntityId, setSelectedEntityId] = useState(initialEntityId || null);
     const [sortConfig, setSortConfig] = useState({ key: 'entity', direction: 'asc' });
-    const [unbalancedThreshold, setUnbalancedThreshold] = useState(-0.5);
+    const [imbalancedThreshold, setImbalancedThreshold] = useState(-0.5);
 
     // Sync URL with filters
     useEffect(() => {
@@ -165,10 +165,10 @@
       }
 
       return result.filter(e => {
-        const hasUnbalanced = e.aliases.some(a => a.z_score <= unbalancedThreshold);
-        return hasUnbalanced;
+        const hasImbalanced = e.aliases.some(a => a.z_score <= imbalancedThreshold);
+        return hasImbalanced;
       });
-    }, [entities, filters, unbalancedThreshold]);
+    }, [entities, filters, imbalancedThreshold]);
 
     const sortedEntities = useMemo(() => {
       let sortableItems = [...filteredEntities];
@@ -278,16 +278,16 @@
           ))}
           <button className="add-filter-btn" onClick={addFilter}>+ Add filter</button>
           <div className="threshold-slider-container">
-            <label htmlFor="unbalanced-threshold">Imbalanced scale:</label>
+            <label htmlFor="imbalanced-threshold">Imbalanced scale:</label>
             <div className="slider-with-labels">
               <input
-                id="unbalanced-threshold"
+                id="imbalanced-threshold"
                 type="range"
                 min="-2"
                 max="-0.1"
                 step="0.1"
-                value={unbalancedThreshold}
-                onChange={e => setUnbalancedThreshold(e.target.value)}
+                value={imbalancedThreshold}
+                onChange={e => setImbalancedThreshold(e.target.value)}
                 className="threshold-slider"
               />
               <div className="slider-labels">
@@ -320,7 +320,7 @@
             <tbody>
               {paginatedEntities.map(entity => {
                 const isSelected = selectedEntityId === entity.entity_id;
-                const unbalancedAliases = entity.aliases.filter(a => a.z_score <= unbalancedThreshold);
+                const imbalancedAliases = entity.aliases.filter(a => a.z_score <= imbalancedThreshold);
 
                 return (
                   <React.Fragment key={entity.entity_id}>
@@ -333,11 +333,11 @@
                       </td>
                       <td>
                         <div className="aliases-container">
-                          {unbalancedAliases.slice(0, 3).map((alias, idx) => (
-                            <span key={idx} className="badge badge-alias badge-unbalanced">{alias.alias_label}</span>
+                          {imbalancedAliases.slice(0, 3).map((alias, idx) => (
+                            <span key={idx} className="badge badge-alias badge-imbalanced">{alias.alias_label}</span>
                           ))}
-                          {unbalancedAliases.length > 3 && (
-                            <span className="alias-more-count">+{unbalancedAliases.length - 3} more</span>
+                          {imbalancedAliases.length > 3 && (
+                            <span className="alias-more-count">+{imbalancedAliases.length - 3} more</span>
                           )}
                         </div>
                       </td>
@@ -356,7 +356,7 @@
                                 {entity.aliases.map(alias => (
                                   <div
                                     key={alias.alias_id}
-                                    className={`alias-list-item${alias.z_score <= unbalancedThreshold ? ' unbalanced' : ' balanced'}`}
+                                    className={`alias-list-item${alias.z_score <= imbalancedThreshold ? ' imbalanced' : ' balanced'}`}
                                   >
                                     <div className="alias-name">{alias.alias_label}</div>
                                     <div className="alias-list-count">{alias.occurrence_count} occurrences</div>
