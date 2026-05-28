@@ -231,7 +231,7 @@ tr.selected td:first-child {
   margin-bottom: 6px;
 }
 
-.badge-unbalanced::before {
+.badge-imbalanced::before {
   content: "⚠️ ";
 }
 
@@ -319,11 +319,11 @@ tr.selected td:first-child {
   padding-left: 13px;
 }
 
-.alias-list-item.unbalanced {
+.alias-list-item.imbalanced {
   background-color: #f4d7d7;
 }
 
-.alias-list-item.unbalanced .alias-name::before {
+.alias-list-item.imbalanced .alias-name::before {
   content: "⚠️ ";
 }
 
