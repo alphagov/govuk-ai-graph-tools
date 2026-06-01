@@ -54,7 +54,24 @@ All endpoints use `GET`.
 ## Use Cases
 
 ### Current
+**Duplicate detection**. Identifies known content overlaps across a given domain. The semantic duplication concept is validated with content designers.
+
+**Outlier detection**. Flags items that content owners confirm are candidates for review, surfacing issues that are not easily found through existing processes.
 
 ### Future
 
+[ADD DIAGRAM]
 
+This diagram maps how publishing processes could interact with the tool's use cases and features, organised across two core process contexts: analysing the quality of content on a subset or domain, and pre-publishing.
+
+**Analyse quality of content on a subset or domain.** Running in batch at the page level, this process could support three use cases:
+
+- **Notify duplicate content:** surfaces snippets of semantically similar content for a specific department or domain, with human interpretation of results. This could feed into features for highlighting semantic duplicate content at snippet level and flagging semantic duplicate pages.
+- **Duplicate pages (Mainstream vs Whitehall):** identifies page-level duplication across publishing formats, with candidate flagging and potential use of a page-level graph rather than an entity-level one.
+- **External page duplicates:** detects content duplicated from external sources, including blog posts and campaigns, and surfaces external content as a source.
+A filter and group function could allow pages to be organised by domain, subdomain, or list, with accepted duplicates (for example, Inheritance Tax) stored by duplicate type to inform the model over time.
+
+**Pre-publishing**. Informed by publishing processes such as creating a new guide, creating a start page, or handling a departmental update request, this context could enable two further use cases:
+
+- **Search for concepts earlier in the process (pre-draft):** allows publishers to run semantic search across existing content before drafting, surfacing similar material earlier in the workflow. This capability could also work as a standalone feature.
+- **Analyse semantic duplicates in a draft:** compares new content against currently published content to surface duplicate concepts at draft stage, using token extraction and semantic similarity scoring.
