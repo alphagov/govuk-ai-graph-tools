@@ -100,3 +100,9 @@ All endpoints use `GET`.
 | `GET /outliers/imbalanced-aliases` | `run_path` | Aliases that occur significantly less often than others for the same entity. |
 | `GET /` | - | Redirects to `/visualisations`. |
 | `GET /healthcheck/ready` | - | Returns `200 Application OK`. |
+
+
+## Developer Setup & Operations
+
+For detailed, step-by-step instructions on setting up your local environment, configuring secrets, running the test suites, launching CLI Makefile actions, and triggering ingestion pipelines, please refer to the [Developer Setup and Operations Runbook](file:///Users/ademolaadefioye/Desktop/GDS/content_extractor_s3/DEVELOPER_RUNBOOK.md).
+
