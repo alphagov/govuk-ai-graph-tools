@@ -6,107 +6,55 @@ Content is ingested from a knowledge graph built by the ontology generator, enab
 
 The tool also includes outlier detection, which filters entities or aliases that look unusual compared to the rest, helping content teams identify errors, inconsistencies, or gaps. For now, outlier types include imbalanced terms (where some aliases for an entity are used significantly less often than others) and near-identical terms (aliases with very similar wording that may indicate a misspelling or inconsistent usage).
 
-## Local Setup
 
----
-
-### Prerequisites
-
-- **Python 3.13** - managed via `uv`
-- **uv** — Python package manager
-
-Install `uv` if not already installed:
-
-```bash
-brew install uv
-# or
-pip install uv
-```
-
----
-
-### 1. Install dependencies
-
-```bash
-uv init --python 3.13
-uv python pin 3.13
-uv add -r requirements.txt
-```
-
-### 2. Run the app
-
-**Debug mode (Flask dev server):**
-
-```bash
-uv run app.py
-```
-
-**Production mode (Uvicorn ASGI server):**
-
-```bash
-uv run uvicorn 'app:create_asgi_app' --factory --port 3000
-```
-
-The app runs on **http://localhost:3000**.
-
----
+![Example 01](images/example-01.png)
 
 
-### 3. Docker run
+## Architecture
 
-Build and run using Docker:
+![Architecture diagram](images/architecture.png)
 
-```bash
-docker build -t govuk-ai-graph-tools-app .
+The tool is a Flask/Uvicorn web application deployed as a Docker container on AWS, built around four main layers.
 
-docker run -p 3000:3000 -t govuk-ai-graph-tools-app
-```
+**Ingestion and extraction**
+A knowledge graph (JSON) maps entities to aliases and their source documents on S3. Two extraction strategies are available: an S3 sequential extractor (fetches and chunks documents directly) and an OpenSearch extractor (uses a pre-indexed vector search to retrieve targeted chunks). The OpenSearch extractor is used by default. Extracted chunks are sent to Anthropic Claude (via AWS Bedrock), which pulls relevant quotes directly from the source markdown files.
 
----
+**Processing and storage**
+Extraction runs as an async background job. Job status and output are persisted to S3. Once complete, the system generates a graph model — nodes, edges, and outlier metadata — saved as `graphNode.json`.
 
+**Outlier detection**
+Imbalanced aliases are surfaced using z-score analysis of alias occurrence counts. Near-identical aliases are detected by edit distance (Levenshtein distance) scoring.
 
----
+**Visualisation**
+Results are served through a set of HTML/JS views: an interactive Cytoscape graph, a React-based metrics dashboard, and dedicated outlier views for similar and imbalanced aliases. The UI uses GOV.UK Design System CSS classes wherever possible.
 
-## Development and Code Quality
-
-### 1. Manual Checks
-You can run the full suite of checks using the `Makefile`:
-
-```bash
-# Run all checks
-make lint && make format && make typecheck
-
-# Run individual checks
-make lint
-make format
-make typecheck
-```
-
-### 2. Pre-commit Hooks
-The project is configured with `pre-commit` to automatically run these checks before every `git commit`. 
-
-To install the hooks in your local repository:
-```bash
-make install-hooks
-```
-
-Once installed, your code will be automatically linted and type-checked whenever you commit. If you need to skip the hooks (e.g., for an urgent WIP commit), you can use `git commit --no-verify`.
-
----
-
-## Tests
-
-```bash
-uv run pytest
-```
-
----
-
-## Licence
-
-[MIT LICENCE](LICENCE)
+**Key technologies:** Python 3.12, Flask, Uvicorn, AWS Bedrock (Claude Sonnet), Amazon OpenSearch, AWS S3, Cytoscape.js, Pydantic, uv.
 
 
+## Available API endpoints
 
+All endpoints use `GET`.
+
+| Endpoint | Parameters | Description |
+|---|---|---|
+| `GET /extract` | `source_path` | Start an extraction job using the S3 extractor. |
+| `GET /extract-os` | `source_path`, `index` | Start an extraction job using the OpenSearch extractor. Set `index=true` to re-index before extracting. |
+| `GET /status/<job_id>` | — | Get the status of a background job. |
+| `GET /visualisations` | — | Browse all available visualisation outputs. |
+| `GET /graph` | `run_path` | Interactive Cytoscape graph for a given run. |
+| `GET /graph-viewmodel` | `run_path` | Raw graph data as JSON. |
+| `GET /metrics` | `run_path` | Metrics dashboard for a given run. |
+| `GET /outliers` | `run_path` | Select an outlier type to explore. |
+| `GET /outliers/similar-aliases` | `run_path` | Aliases syntactically similar to others for the same entity. |
+| `GET /outliers/imbalanced-aliases` | `run_path` | Aliases that occur significantly less often than others for the same entity. |
+| `GET /` | — | Redirects to `/visualisations`. |
+| `GET /healthcheck/ready` | — | Returns `200 Application OK`. |
+
+
+## Use Cases
+
+### Current
+
+### Future
 
 
