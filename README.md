@@ -1,6 +1,10 @@
 # GOV.UK AI Graph Tools
 
-TODO: Fill in project description
+A proof-of-concept tool for identifying duplicate and outlier content across GOV.UK at scale. The tool uses semantic similarity and vector search (Amazon OpenSearch) to surface content relationships and anomalies that would be impractical to detect through manual review.
+
+Content is ingested from a knowledge graph built by the ontology generator, enabling content teams to prioritise quality improvements across large content estates. Outputs are surfaced through a graph visualiser with canonical node edges and alias search, designed for use by non-technical content professionals.
+
+The tool also includes outlier detection, which filters entities or aliases that look unusual compared to the rest, helping content teams identify errors, inconsistencies, or gaps. For now, outlier types include imbalanced terms (where some aliases for an entity are used significantly less often than others) and near-identical terms (aliases with very similar wording that may indicate a misspelling or inconsistent usage).
 
 ## Local Setup
 
