@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from dataclasses import dataclass, field
 from pprint import pprint
 from typing import Dict, List, Optional
@@ -66,6 +67,15 @@ class BaseExtractorConfig:
 
 
 class BaseQuoteExtractor:
+    @staticmethod
+    def _is_exact_keyword_match(text: str, keyword: str) -> bool:
+        """Return True only when the keyword appears exactly as a standalone phrase."""
+        if not text or not keyword:
+            return False
+
+        pattern = re.compile(rf"(?<!\w){re.escape(keyword)}(?!\w)")
+        return bool(pattern.search(text))
+
     def __init__(self, config: BaseExtractorConfig):
         self.config = config
 
@@ -92,13 +102,16 @@ class BaseQuoteExtractor:
             system_prompt=(
                 "You are an expert at extracting direct quotes from documents. "
                 "Given a list of keywords and the content of a document segment, "
-                "identify every sentence that contains at least one of the keywords. "
+                "identify every sentence that contains the exact of the keywords. "
                 "For each match, return:\n"
                 "1. the EXACT sentence as 'content' (do not paraphrase)\n"
                 "2. the keyword that was matched as 'keyword_matched'\n\n"
+                "3. You should also be case sensitive when matching keywords"
                 "If a keyword appears multiple times in different sentences, "
                 "extract each unique sentence. "
                 "If no matches are found, return an empty list of quotes.\n"
+                "Only return sentences where the keyword appears exactly as written, "
+                "not as part of a longer word or phrase.\n"
                 "IMPORTANT: The source is a Markdown file. You MUST return 'content' that "
                 "matches the RENDERED text, not the raw source. "
                 "Apply these cleaning rules to every extracted quote:\n"

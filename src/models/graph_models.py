@@ -21,7 +21,7 @@ class Entity(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     def model_post_init(self, __context: Any) -> None:
-        if self.label:
+        if self.label and not self.aliases:
             new_alias_name = " ".join(
                 word.lower() for word in re.split(r"(?=[A-Z])", self.label) if word
             )

@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import fsspec
 
-from src.content_extractor.base import BaseExtractorConfig
+from src.content_extractor.base import BaseExtractorConfig, BaseQuoteExtractor
 from src.content_extractor.highlighter import highlight_occurrence
 from src.content_extractor.opensearch import OpenSearchConfig, OpenSearchQuoteExtractor
 from src.content_extractor.s3_sequential import S3QuoteExtractor
@@ -150,12 +150,35 @@ async def fetch_extraction_findings(
         return await s3_extractor.run_mapping(doc_to_keywords)
 
 
+def normalize_url(url: str) -> str:
+    """Decodes percent-encoding and lowercases the URL for case-insensitive comparison."""
+    import urllib.parse
+
+    try:
+        decoded = urllib.parse.unquote(url)
+        return decoded.lower().strip()
+    except Exception:
+        return url.lower().strip()
+
+
+def normalize_text(text: str) -> str:
+    """Removes HTML tags and normalizes casing/spacing/punctuation of a text quote."""
+    # Remove HTML tags (e.g. <span class="occurrence"> and </span>)
+    text_no_tags = re.sub(r"<[^>]+>", "", text)
+    # Remove non-alphanumeric characters, compress whitespaces, and lowercase
+    cleaned = re.sub(r"[^a-zA-Z0-9\s]", "", text_no_tags)
+    return " ".join(cleaned.lower().split())
+
+
 def map_findings_to_entities(
     raw_findings: List[Dict[str, Any]], registry: Dict[str, Any]
 ) -> Dict[str, Dict[str, List[Occurrence]]]:
-    """Groups findings by entity and alias with highlighting and links."""
+    """Groups findings by entity and alias with highlighting and links.
+
+    Performs strict deduplication.
+    """
     results: Dict[str, Dict[str, List[Occurrence]]] = defaultdict(lambda: defaultdict(list))
-    seen_occurrences = set()
+    seen_entity_occurrences = set()
 
     for finding in raw_findings:
         uri = finding["source"]
@@ -165,14 +188,31 @@ def map_findings_to_entities(
 
         if uri in registry:
             for ent in registry[uri]["entities"]:
-                if any(a.name == keyword for a in ent.aliases):
-                    context = highlight_occurrence(content, keyword)
-                    occurrence_key = (ent.canonical_key, keyword, link, context)
+                # Match keyword strictly case-sensitively to the entity's aliases
+                matching_aliases = [a for a in ent.aliases if a.name == keyword]
+                if matching_aliases:
+                    matched_keyword = matching_aliases[0].name
 
-                    if occurrence_key not in seen_occurrences:
-                        seen_occurrences.add(occurrence_key)
+                    longest_alias = matched_keyword
+                    for alias_obj in ent.aliases:
+                        alias_name = alias_obj.name
+                        if len(alias_name) > len(longest_alias):
+                            if BaseQuoteExtractor._is_exact_keyword_match(content, alias_name):
+                                longest_alias = alias_name
+                    matched_keyword = longest_alias
+
+                    # Normalize URL and content for strict, case-insensitive deduplication
+                    norm_link = normalize_url(link)
+                    norm_content = normalize_text(content)
+
+                    # Deduplicate globally per entity/alias based on normalized URL and content
+                    occurrence_key = (ent.canonical_key, matched_keyword, norm_link, norm_content)
+
+                    if occurrence_key not in seen_entity_occurrences:
+                        seen_entity_occurrences.add(occurrence_key)
+                        context = highlight_occurrence(content, matched_keyword)
                         occurrence = Occurrence(link=link, context=context)
-                        results[ent.canonical_key][keyword].append(occurrence)
+                        results[ent.canonical_key][matched_keyword].append(occurrence)
 
     return results
 

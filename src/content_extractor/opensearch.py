@@ -102,6 +102,8 @@ class OpenSearchQuoteExtractor(BaseQuoteExtractor):
         try:
             result = await self.agent.run(prompt)
             for q in result.output.quotes:
+                if not self._is_exact_keyword_match(q.content, q.keyword_matched):
+                    continue
                 results_list.append(
                     {
                         "content": q.content,
