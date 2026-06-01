@@ -7,7 +7,7 @@ Content is ingested from a knowledge graph built by the ontology generator, enab
 The tool also includes outlier detection, which filters entities or aliases that look unusual compared to the rest, helping content teams identify errors, inconsistencies, or gaps. For now, outlier types include imbalanced terms (where some aliases for an entity are used significantly less often than others) and near-identical terms (aliases with very similar wording that may indicate a misspelling or inconsistent usage).
 
 
-![Example 01](images/example-01.png)
+<p align="center"><a href="images/example-01.png"><img src="images/example-01.png" width="600" /></a></p>
 
 ## Current Use Cases
 
@@ -28,7 +28,7 @@ The tool works across any GOV.UK (sub)domain processed by the Ontology Generator
 
 ## Future Use Cases
 
-![Use cases diagram](images/use-cases.png)
+<p align="center"><a href="images/use-cases.png"><img src="images/use-cases.png" width="600" /></a></p>
 
 The above diagram maps how publishing processes could interact with the tool's use cases and features, organised across two core process contexts: analysing the quality of content on a subset or domain, and pre-publishing.
 
@@ -79,7 +79,7 @@ Results are served through a set of HTML/JS views: an interactive Cytoscape grap
 
 **Key technologies:** Python 3.12, Flask, Uvicorn, AWS Bedrock (Claude Sonnet), Amazon OpenSearch, AWS S3, Cytoscape.js, Pydantic, uv.
 
-![Architecture diagram](images/architecture.png)
+<p align="center"><a href="images/architecture.png"><img src="images/architecture.png" width="800" /></a></p>
 
 
 ## Available API endpoints
