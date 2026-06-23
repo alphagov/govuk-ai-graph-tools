@@ -2,10 +2,10 @@
 
 A proof-of-concept tool for identifying duplicate and outlier content across GOV.UK at scale. The tool uses semantic similarity and vector search (Amazon OpenSearch) to find content relationships and anomalies that would be impractical to detect through manual review.
 
-Content is ingested from a knowledge graph built by the ontology generator, enabling content teams to prioritise quality improvements across large content estates. Outputs are shown through a graph visualiser with canonical node edges and alias search, designed for use by non-technical content professionals.
+Content is ingested from a knowledge graph built by the Generator, enabling content teams to prioritise quality improvements across large content estates. Outputs are shown through a graph visualiser with canonical node edges and alias search, designed for use by non-technical content professionals.
 
-For a technical overview of how this graph tooling connects to the workflow app,
-generator, harness, E2E testing framework, and research tooling, see the
+For a technical overview of how this Content Workflow connects to the Workflow,
+Generator, Ontology Validator, and Data Science Repo, see the
 [Ontology Generation Cross-Repo Integration overview](https://github.com/alphagov/govuk-ai-accelerator/blob/main/docs/architecture/cross-repo-integration.md).
 
 The tool also includes outlier detection, which filters entities or aliases that look unusual compared to the rest, helping content teams identify errors, inconsistencies, or gaps. For now, outlier types include imbalanced terms (where some aliases for an entity are used significantly less often than others) and near-identical terms (aliases with very similar wording that may indicate a misspelling or inconsistent usage).
