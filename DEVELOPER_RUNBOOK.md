@@ -242,7 +242,7 @@ Triggered automatically when the CI pipeline completes successfully on the `main
 
 ### 9.3: Deployment (`deploy.yml`)
 Deploys the application as an AWS ECS container service. It can be triggered manually via `workflow_dispatch` (to choose a custom git reference and deployment target environment) or automatically upon a new release tag push.
-1.  **Build & Publish Multi-Architecture Image:** Uses GOV.UK's shared build pipeline (`alphagov/govuk-infrastructure/.github/workflows/build-and-push-multiarch-image.yml`) to compile multi-arch Docker builds and publish them to the AWS Elastic Container Registry (ECR).
+1.  **Build & Publish ARM Image:** Uses GOV.UK's shared build pipeline (`alphagov/govuk-infrastructure/.github/workflows/build-push-arm-image.yml`) to compile multi-arch Docker builds and publish them to the AWS Elastic Container Registry (ECR).
 2.  **Trigger Deploy:** Dispatches deployment execution webhooks via GOV.UK infrastructure workflows to notify Argo Events to roll out the updated container tag on the target AWS cluster.
 
 
